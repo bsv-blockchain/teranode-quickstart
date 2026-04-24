@@ -54,14 +54,6 @@ echo_green "  Teranode Quickstart — first-time setup"
 echo_green "=================================================="
 echo ""
 
-echo_info "Running system checks..."
-if ! "${REPO_ROOT}/lib/check_requirements.sh" testnet; then
-    echo_warning "Some checks warned. Continue anyway?"
-    ans=$(prompt "Proceed? (y/N)" "N")
-    [[ "$ans" =~ ^[Yy] ]] || exit 1
-fi
-echo ""
-
 NETWORK=$(pick_one "Which network?" "testnet" "mainnet" "regtest")
 echo_info "Selected: $NETWORK"
 echo ""
@@ -77,6 +69,14 @@ if [ "$NETWORK" = "mainnet" ]; then
     fi
     echo ""
 fi
+
+echo_info "Running system checks for $NETWORK..."
+if ! "${REPO_ROOT}/lib/check_requirements.sh" "$NETWORK"; then
+    echo_warning "Some checks warned. Continue anyway?"
+    ans=$(prompt "Proceed? (y/N)" "N")
+    [[ "$ans" =~ ^[Yy] ]] || exit 1
+fi
+echo ""
 
 MODE=$(pick_one "Run mode?" "listen_only (safe default, no public exposure)" "full (requires public endpoints)")
 case "$MODE" in
