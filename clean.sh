@@ -55,9 +55,24 @@ VOLUMES=(
 )
 
 if [ "$FORCE" -eq 0 ]; then
-    echo_yellow "This will clean mode=$MODE. Volumes/configs will be destroyed."
-    read -r -p "Type YES to continue: " confirm
-    [ "$confirm" = "YES" ] || { echo_warning "Aborted."; exit 0; }
+    echo_yellow "WARNING: this will permanently delete data (mode=$MODE)."
+    if [ "$MODE" = "all" ] || [ "$MODE" = "data" ]; then
+        echo "Volumes that will be removed:"
+        for v in "${VOLUMES[@]}"; do
+            if docker volume inspect "$v" >/dev/null 2>&1; then
+                echo "  $v (exists)"
+            else
+                echo "  $v (doesn't exist)"
+            fi
+        done
+    fi
+    if [ "$MODE" = "all" ] || [ "$MODE" = "config" ]; then
+        echo "Config that will be removed: .env"
+    fi
+    echo ""
+    read -p "Proceed? (y/N): " -n 1 -r
+    echo ""
+    [[ $REPLY =~ ^[Yy]$ ]] || { echo_warning "Cancelled."; exit 0; }
 fi
 
 if [ "$MODE" = "all" ] || [ "$MODE" = "data" ]; then
