@@ -29,9 +29,9 @@ pick_one() {
     local prompt_msg="$1"; shift
     local options=("$@")
     local i=1
-    echo_cyan "$prompt_msg"
+    echo_cyan "$prompt_msg" >&2
     for opt in "${options[@]}"; do
-        echo "  $i) $opt"
+        echo "  $i) $opt" >&2
         i=$((i + 1))
     done
     local choice
@@ -41,7 +41,7 @@ pick_one() {
             echo "${options[$((choice - 1))]}"
             return
         fi
-        echo_warning "Pick a number between 1 and ${#options[@]}."
+        echo_warning "Pick a number between 1 and ${#options[@]}." >&2
     done
 }
 
