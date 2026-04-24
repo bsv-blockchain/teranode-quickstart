@@ -131,6 +131,7 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 | `./update.sh`    | Check GitHub for a newer Teranode release; bump `.env`; pull; restart. See below. |
 | `./cli.sh …`     | Run `teranode-cli` inside the blockchain container (FSM state, seeder, admin). Ex: `./cli.sh getfsmstate` |
 | `./rpc.sh …`     | Call JSON-RPC at localhost:9292 (chain queries, TX submission). Ex: `./rpc.sh getblockcount` |
+| `./seed.sh`      | Seed UTXO state from a snapshot ZIP. Takes URL + block hash (or reads `SEED_URL` / `SEED_HASH` from `.env`). |
 | `./status.sh`    | `docker compose ps` + FSM state + block count.              |
 | `./logs.sh [svc]`| Tail logs for a service or all services.                    |
 | `./clean.sh`     | Remove volumes / config. See flags with `./clean.sh --help`.|
@@ -176,7 +177,7 @@ Different networks can't share UTXO state. To switch:
 
 ```
 teranode-quickstart/
-├── setup.sh, start.sh, stop.sh, restart.sh, cli.sh, rpc.sh, logs.sh, status.sh, clean.sh, update.sh
+├── setup.sh, start.sh, stop.sh, restart.sh, cli.sh, rpc.sh, logs.sh, status.sh, clean.sh, update.sh, seed.sh
 ├── .env.example                   # committed template; copy to .env
 ├── docker-compose.yml             # root compose, uses ${TERANODE_VERSION} from .env
 ├── compose/

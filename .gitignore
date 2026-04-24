@@ -5,6 +5,10 @@
 logs/
 *.log
 
+# Snapshot download cache + extracted seed data (./seed.sh)
+seed-cache/
+seed-data/
+
 # Editor / OS
 .DS_Store
 *.swp
