@@ -15,7 +15,18 @@ Real BSV mainnet. **Still maturing in Teranode** — not yet production-validate
 Standard BSV testnet. Good for realistic integration testing.
 
 - 32 GB RAM recommended (16 GB minimum), 300 GB SSD, 8+ cores.
-- Not the same as **teratestnet** (the Teranode team's shared training-wheels network, 1 GB block cap). For teratestnet specifically, use [teranode-teratestnet](https://github.com/bsv-blockchain/teranode-teratestnet).
+- Distinct from **teratestnet** (below).
+
+## teratestnet
+
+Shared Teranode training-wheels network run by the BSV Association. Lower block ceiling and a published UTXO snapshot make it the fastest way to get a working node for testing without syncing the real chain.
+
+- `blockmaxsize = excessiveblocksize = 1 GB` (enforced smaller than real testnet so the shared network stays approachable).
+- `minminingtxfee = 0`.
+- 32 GB RAM recommended, 100 GB SSD, 8+ cores.
+- Canonical snapshot:
+  `https://svnode-snapshots.bsvb.tech/teratestnet/000000002ea94a515ad9fd40d710fd249fe8610acef7b74f459446812d565187.zip`
+  Seed with: `./seed.sh 000000002ea94a515ad9fd40d710fd249fe8610acef7b74f459446812d565187`
 
 ## regtest
 

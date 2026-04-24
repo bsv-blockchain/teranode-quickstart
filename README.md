@@ -36,11 +36,12 @@ Everything else — RPC (9292), Grafana (3005), Prometheus (9090), Kafka (9092/8
 - Docker + Docker Compose v2 (Docker Desktop or a recent Linux install)
 - A host with enough RAM, disk, and CPU for the chosen network:
 
-| Network  | RAM (recommended) | RAM (minimum) | Disk    | CPU cores |
-|----------|-------------------|---------------|---------|-----------|
-| mainnet  | **256 GB**        | 128 GB        | 2 TB+   | 16+       |
-| testnet  | 32 GB             | 16 GB         | 300 GB  | 8+        |
-| regtest  | 8 GB              | 4 GB          | 20 GB   | 4+        |
+| Network      | RAM (recommended) | RAM (minimum) | Disk    | CPU cores |
+|--------------|-------------------|---------------|---------|-----------|
+| mainnet      | **256 GB**        | 128 GB        | 2 TB+   | 16+       |
+| testnet      | 32 GB             | 16 GB         | 300 GB  | 8+        |
+| teratestnet  | 32 GB             | 16 GB         | 100 GB  | 8+        |
+| regtest      | 8 GB              | 4 GB          | 20 GB   | 4+        |
 
 Mainnet is memory-hungry: Aerospike holds the full UTXO set in memory and the Teranode microservices run in parallel, so 128 GB is the floor for sustained mainnet operation and 256 GB is what you actually want. Running below the recommended tier works but you'll trade sync speed, propagation latency, and headroom during block spikes.
 

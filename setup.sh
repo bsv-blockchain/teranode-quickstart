@@ -54,7 +54,7 @@ echo_green "  Teranode Quickstart — first-time setup"
 echo_green "=================================================="
 echo ""
 
-NETWORK=$(pick_one "Which network?" "testnet" "mainnet" "regtest")
+NETWORK=$(pick_one "Which network?" "teratestnet" "testnet" "mainnet" "regtest")
 echo_info "Selected: $NETWORK"
 echo ""
 

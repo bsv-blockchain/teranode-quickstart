@@ -39,10 +39,11 @@ check_disk_space() {
     echo_info "Checking disk space..."
     local required_gb
     case "$NETWORK" in
-        mainnet) required_gb=2000 ;;
-        testnet) required_gb=300 ;;
-        regtest) required_gb=20 ;;
-        *)       required_gb=300 ;;
+        mainnet)     required_gb=2000 ;;
+        testnet)     required_gb=300 ;;
+        teratestnet) required_gb=100 ;;
+        regtest)     required_gb=20 ;;
+        *)           required_gb=300 ;;
     esac
     echo_info "Network: $NETWORK — recommended free space: ${required_gb}GB"
 
@@ -74,10 +75,11 @@ check_memory() {
 
     local minimum_gb recommended_gb
     case "$NETWORK" in
-        mainnet) minimum_gb=128; recommended_gb=256 ;;
-        testnet) minimum_gb=16;  recommended_gb=32  ;;
-        regtest) minimum_gb=4;   recommended_gb=8   ;;
-        *)       minimum_gb=16;  recommended_gb=32  ;;
+        mainnet)     minimum_gb=128; recommended_gb=256 ;;
+        testnet)     minimum_gb=16;  recommended_gb=32  ;;
+        teratestnet) minimum_gb=16;  recommended_gb=32  ;;
+        regtest)     minimum_gb=4;   recommended_gb=8   ;;
+        *)           minimum_gb=16;  recommended_gb=32  ;;
     esac
 
     if [ "$total_gb" -lt "$minimum_gb" ]; then
@@ -104,10 +106,11 @@ check_cpu() {
 
     local recommended_cores
     case "$NETWORK" in
-        mainnet) recommended_cores=16 ;;
-        testnet) recommended_cores=8  ;;
-        regtest) recommended_cores=4  ;;
-        *)       recommended_cores=8  ;;
+        mainnet)     recommended_cores=16 ;;
+        testnet)     recommended_cores=8  ;;
+        teratestnet) recommended_cores=8  ;;
+        regtest)     recommended_cores=4  ;;
+        *)           recommended_cores=8  ;;
     esac
 
     if [ "$cores" -lt "$recommended_cores" ]; then

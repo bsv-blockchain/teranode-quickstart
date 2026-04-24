@@ -12,6 +12,8 @@ x-teranode-settings:
     p2p_advertise_addresses: "${P2P_ADVERTISE_ADDR:-}"
     rpc_user: "${RPC_USER:-}"
     rpc_pass: "${RPC_PASS:-}"
+    blockmaxsize: "${blockmaxsize:-}"
+    excessiveblocksize: "${excessiveblocksize:-}"
 
 networks:
   teranode-network:
