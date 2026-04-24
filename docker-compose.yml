@@ -1,0 +1,131 @@
+x-teranode-settings:
+  &teranode-settings
+  environment:
+    GOGC: "${GOGC:-200}"
+    network: "${TERANODE_NETWORK_LABEL:-testnet}"
+    p2p_health_check_enabled: "false"
+    p2p_dht_mode: "${p2p_dht_mode:-}"
+    minminingtxfee: "${minminingtxfee:-}"
+
+networks:
+  teranode-network:
+    name: teranode-quickstart-network
+
+volumes:
+  nginx-cache:
+  postgres-data:
+  aerospike-data:
+  aerospike-smd:
+  aerospike-asmt:
+  teranode-data:
+  prometheus-data:
+  grafana-data:
+
+services:
+  blockchain:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: blockchain
+    <<: *teranode-settings
+
+  asset:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: asset
+    <<: *teranode-settings
+
+  legacy:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: legacy
+    <<: *teranode-settings
+
+  asset-cache:
+    extends:
+      file: ./compose/docker-services.yml
+      service: asset-cache
+
+  rpc:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: rpc
+    <<: *teranode-settings
+
+  subtreevalidation:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: subtreevalidation
+    <<: *teranode-settings
+
+  blockvalidation:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: blockvalidation
+    <<: *teranode-settings
+
+  blockassembly:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: blockassembly
+    <<: *teranode-settings
+
+  peer:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: peer
+    <<: *teranode-settings
+    profiles:
+      - full
+
+  pruner:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: pruner
+    <<: *teranode-settings
+
+  propagation:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: propagation
+    <<: *teranode-settings
+
+  postgres:
+    extends:
+      file: ./compose/docker-services.yml
+      service: postgres
+
+  kafka-shared:
+    extends:
+      file: ./compose/docker-services.yml
+      service: kafka-shared
+
+  kafka-console-shared:
+    extends:
+      file: ./compose/docker-services.yml
+      service: kafka-console-shared
+
+  aerospike:
+    extends:
+      file: ./compose/docker-services.yml
+      service: ${AEROSPIKE_SERVICE:-aerospike-ee}
+
+  aerospike-exporter:
+    extends:
+      file: ./compose/docker-services.yml
+      service: aerospike-exporter
+
+  prometheus:
+    extends:
+      file: ./compose/docker-services.yml
+      service: prometheus
+
+  grafana:
+    extends:
+      file: ./compose/docker-services.yml
+      service: grafana
+
+  seeder:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: seeder
+    <<: *teranode-settings

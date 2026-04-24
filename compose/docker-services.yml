@@ -1,0 +1,182 @@
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:17
+    networks:
+      - teranode-network
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-teranode_change_me}
+      POSTGRES_DB: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    entrypoint: ["/bin/bash", "-c"]
+    command: |
+      "
+      cat > /docker-entrypoint-initdb.d/init.sql <<'EOF'
+      CREATE ROLE teranode LOGIN
+        PASSWORD 'teranode'
+        SUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
+      GRANT teranode TO postgres;
+      CREATE DATABASE teranode
+        WITH OWNER = teranode
+        ENCODING = 'UTF8'
+        CONNECTION LIMIT = -1;
+      EOF
+      cat > /refresh-collation.sh <<'EOF'
+      #!/bin/bash
+      set -e
+      until pg_isready -U postgres > /dev/null 2>&1; do
+        sleep 1
+      done
+      psql -U postgres -d postgres -c 'ALTER DATABASE postgres REFRESH COLLATION VERSION;' 2>/dev/null || true
+      psql -U postgres -d teranode -c 'ALTER DATABASE teranode REFRESH COLLATION VERSION;' 2>/dev/null || true
+      EOF
+      chmod +x /refresh-collation.sh
+      /refresh-collation.sh &
+      exec /usr/local/bin/docker-entrypoint.sh postgres
+      "
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  kafka-shared:
+    container_name: kafka-shared
+    image: redpandadata/redpanda:v25.2.1
+    mem_limit: 1024m
+    restart: on-failure
+    networks:
+      - teranode-network
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --node-id 0
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://kafka-shared:9092
+      - --pandaproxy-addr 0.0.0.0:9093
+      - --advertise-pandaproxy-addr localhost:9093
+    ports:
+      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:9092:9092"
+      - "127.0.0.1:9093:9093"
+
+  kafka-console-shared:
+    container_name: kafka-console-shared
+    image: docker.redpanda.com/redpandadata/console:v3.2.2
+    networks:
+      - teranode-network
+    restart: on-failure
+    environment:
+      CONFIG_FILEPATH: /etc/console/config.yml
+    volumes:
+      - ../config/protos:/etc/protos:ro
+      - ../config/kafka-console-config.yml:/etc/console/config.yml:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - kafka-shared
+
+  aerospike:
+    container_name: aerospike
+    image: aerospike/aerospike-server:8.1
+    command: --config-file /etc/aerospike.conf
+    networks:
+      - teranode-network
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 32768
+        hard: 32768
+    volumes:
+      - ../config/aerospike.conf:/etc/aerospike.conf
+      - aerospike-data:/opt/aerospike/data
+      - aerospike-smd:/opt/aerospike/smd
+    privileged: true
+    hostname: aerospike
+
+  aerospike-ee:
+    container_name: aerospike
+    image: aerospike/aerospike-server-enterprise:8.1
+    networks:
+      - teranode-network
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 32768
+        hard: 32768
+    stop_grace_period: 600s
+    volumes:
+      - ../config/aerospike-ee.conf:/etc/aerospike.conf
+      - ../config/aerospike-asmt-wrapper.sh:/aerospike-asmt-wrapper.sh:ro
+      - aerospike-data:/opt/aerospike/data
+      - aerospike-smd:/opt/aerospike/smd
+      - aerospike-asmt:/backup/indexes
+    entrypoint: ["/bin/bash", "/aerospike-asmt-wrapper.sh"]
+    privileged: true
+    hostname: aerospike
+
+  aerospike-exporter:
+    image: aerospike/aerospike-prometheus-exporter:1.24.0
+    container_name: aerospike-exporter
+    environment:
+      AS_HOST: aerospike
+      AS_PORT: 3000
+      AGENT_BIND_PORT: 10145
+      METRIC_LABELS: "type='quickstart',source='aerospike'"
+    networks:
+      - teranode-network
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.44.0
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks:
+      - teranode-network
+    volumes:
+      - ../config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:12.2.0
+    ports:
+      - "127.0.0.1:3005:3000"
+    networks:
+      - teranode-network
+    volumes:
+      - ../config/grafana_datasource.yaml:/etc/grafana/provisioning/datasources/main.yaml
+      - ../config/grafana_dashboards/main.yaml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ../config/grafana_dashboards:/var/lib/grafana/dashboards
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+  asset-cache:
+    container_name: asset-cache
+    image: nginx:1.29.2
+    networks:
+      - teranode-network
+    ports:
+      - "${HOST_IP:-127.0.0.1}:8000:8000"
+    depends_on:
+      - asset
+    volumes:
+      - ../config/asset-cache-nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx-cache:/tmp/nginx
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
