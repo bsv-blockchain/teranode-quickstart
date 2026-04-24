@@ -216,6 +216,22 @@ services:
       start_period: 7s
     restart: on-failure
 
+  blockpersister:
+    <<: *teranode-base
+    container_name: blockpersister
+    entrypoint: ["/app/entrypoint.sh"]
+    command: ["-blockpersister=1"]
+    depends_on:
+      blockchain:
+        condition: service_healthy
+      blockvalidation:
+        condition: service_healthy
+      blockassembly:
+        condition: service_healthy
+    profiles:
+      - archival
+    restart: on-failure
+
   seeder:
     <<: *teranode-base
     container_name: seeder

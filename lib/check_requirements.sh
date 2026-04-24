@@ -81,7 +81,7 @@ check_memory() {
     esac
 
     if [ "$total_gb" -lt "$minimum_gb" ]; then
-        echo_error "Below minimum (${minimum_gb}GB for $NETWORK). Node will OOM during sync."
+        echo_warning "Below minimum (${minimum_gb}GB for $NETWORK). Node is likely to OOM during sync."
         return 1
     fi
     if [ "$total_gb" -lt "$recommended_gb" ]; then

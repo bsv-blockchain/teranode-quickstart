@@ -29,6 +29,9 @@ PROFILES=()
 if [ -n "$ASSET_PUBLIC_URL" ]; then
     PROFILES+=(--profile full)
 fi
+if [ "${ARCHIVAL:-false}" = "true" ]; then
+    PROFILES+=(--profile archival)
+fi
 
 echo_info "Network: $NETWORK"
 echo_info "Compose env files: .env + compose/networks/${NETWORK}.env"

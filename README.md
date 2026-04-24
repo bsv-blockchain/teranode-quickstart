@@ -48,6 +48,14 @@ SSD storage is strongly recommended everywhere — HDDs will bottleneck Aerospik
 
 `./lib/check_requirements.sh` verifies these before setup.
 
+## Pruning and archival
+
+By default, Teranode prunes spent outputs from the UTXO store **after 288 blocks** (~48 hours). This is the recommended setting and keeps Aerospike's memory + disk footprint bounded. **Do not raise the pruning depth** unless you have a specific reason — every extra block you retain grows Aerospike proportionally, and mainnet's UTXO churn is high.
+
+If you need the full historical block data (indexers, explorers, chain analysis), enable the optional **blockpersister** service by setting `ARCHIVAL=true` in `.env` before `./start.sh`. It writes raw block data to disk and runs in parallel with the pruner — pruning behaviour is unchanged, you just gain a durable archive.
+
+Archival mode costs significant disk space (grows with chain size — budget multiple TB on mainnet). Most operators should leave `ARCHIVAL=false` and rely on the default 288-block pruning window.
+
 ---
 
 ## Quick start

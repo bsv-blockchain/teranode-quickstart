@@ -83,6 +83,14 @@ services:
       service: pruner
     <<: *teranode-settings
 
+  blockpersister:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: blockpersister
+    <<: *teranode-settings
+    profiles:
+      - archival
+
   propagation:
     extends:
       file: ./compose/docker-teranode.yml
