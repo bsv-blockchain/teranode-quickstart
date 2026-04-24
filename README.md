@@ -48,6 +48,23 @@ SSD storage is strongly recommended everywhere — HDDs will bottleneck Aerospik
 
 `./lib/check_requirements.sh` verifies these before setup.
 
+## Seeding
+
+Initial sync is faster if you seed the UTXO set from an existing snapshot instead of replaying the whole chain.
+
+- **teratestnet** — a canonical snapshot is published. Just supply a block hash:
+  ```bash
+  ./seed.sh 000000002ea94a515ad9fd40d710fd249fe8610acef7b74f459446812d565187
+  ```
+  The script derives the URL:
+  `https://svnode-snapshots.bsvb.tech/teratestnet/<hash>.zip`
+- **mainnet / standard testnet** — no canonical download URL exists. Download or generate the seed data yourself, put it in a local directory, then:
+  ```bash
+  ./seed.sh <block-hash> /path/to/seed-dir
+  ```
+
+Snapshots are typically pruned — spent UTXOs are not included. For full historical TX data, skip seeding and let the node sync from scratch.
+
 ## Pruning and archival
 
 By default, Teranode prunes spent outputs from the UTXO store **after 288 blocks** (~48 hours). This is the recommended setting and keeps Aerospike's memory + disk footprint bounded. **Do not raise the pruning depth** unless you have a specific reason — every extra block you retain grows Aerospike proportionally, and mainnet's UTXO churn is high.
