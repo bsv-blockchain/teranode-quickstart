@@ -127,7 +127,16 @@ case "$rpc_choice" in
         ;;
 esac
 
-HOST_IP=$(prompt "Host IP to bind ports (127.0.0.1 = localhost only)" "127.0.0.1")
+echo ""
+echo_cyan "Host IP binding — controls ONLY these 3 ports:"
+echo "   8090  asset viewer UI"
+echo "   8000  asset-cache public API (full mode)"
+echo "   9905  P2P inbound (full mode)"
+echo_cyan "Everything else (RPC, Grafana, Prometheus, Kafka, Postgres, Aerospike) stays"
+echo_cyan "hardcoded to 127.0.0.1 regardless. Options:"
+echo "   127.0.0.1  localhost only (safe default, works behind NAT)"
+echo "   0.0.0.0    all interfaces (needed when another host / reverse proxy needs to reach these)"
+HOST_IP=$(prompt "Host IP" "127.0.0.1")
 
 echo ""
 echo_green "Summary"
