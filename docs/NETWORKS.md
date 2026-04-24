@@ -19,7 +19,7 @@ Standard BSV testnet. Good for realistic integration testing.
 
 ## regtest
 
-Local-only, no external peers. Generate blocks on demand with `./cli.sh generate N`.
+Local-only, no external peers. Generate blocks on demand with `./rpc.sh generate N`.
 
 - 8 GB RAM (4 GB minimum), 20 GB disk, 4+ cores.
 

@@ -66,7 +66,8 @@ cd teranode-quickstart
 ./setup.sh       # interactive: pick network + mode, generate .env + settings
 ./start.sh       # docker compose up with the right profiles
 ./status.sh      # verify everything healthy
-./cli.sh getblockcount
+./rpc.sh getblockcount    # chain queries via JSON-RPC
+./cli.sh getfsmstate      # teranode-cli for FSM / seeder / etc.
 ```
 
 To stop: `./stop.sh`. To tail logs: `./logs.sh blockchain`. To upgrade Teranode: `./update.sh`.
@@ -128,7 +129,8 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 | `./stop.sh`      | Graceful shutdown (FSM → IDLE, then `docker compose down`). |
 | `./restart.sh`   | stop → start.                                               |
 | `./update.sh`    | Check GitHub for a newer Teranode release; bump `.env`; pull; restart. See below. |
-| `./cli.sh …`     | Run `teranode-cli` inside the blockchain container. Ex: `./cli.sh getblockcount` |
+| `./cli.sh …`     | Run `teranode-cli` inside the blockchain container (FSM state, seeder, admin). Ex: `./cli.sh getfsmstate` |
+| `./rpc.sh …`     | Call JSON-RPC at localhost:9292 (chain queries, TX submission). Ex: `./rpc.sh getblockcount` |
 | `./status.sh`    | `docker compose ps` + FSM state + block count.              |
 | `./logs.sh [svc]`| Tail logs for a service or all services.                    |
 | `./clean.sh`     | Remove volumes / config. See flags with `./clean.sh --help`.|
@@ -174,7 +176,7 @@ Different networks can't share UTXO state. To switch:
 
 ```
 teranode-quickstart/
-├── setup.sh, start.sh, stop.sh, restart.sh, cli.sh, logs.sh, status.sh, clean.sh, update.sh
+├── setup.sh, start.sh, stop.sh, restart.sh, cli.sh, rpc.sh, logs.sh, status.sh, clean.sh, update.sh
 ├── .env.example                   # committed template; copy to .env
 ├── docker-compose.yml             # root compose, uses ${TERANODE_VERSION} from .env
 ├── compose/
