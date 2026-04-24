@@ -39,7 +39,7 @@ check_disk_space() {
     echo_info "Checking disk space..."
     local required_gb
     case "$NETWORK" in
-        mainnet) required_gb=1500 ;;
+        mainnet) required_gb=2000 ;;
         testnet) required_gb=300 ;;
         regtest) required_gb=20 ;;
         *)       required_gb=300 ;;
@@ -72,19 +72,23 @@ check_memory() {
     fi
     echo_info "Total RAM: ${total_gb}GB"
 
-    local recommended_gb
+    local minimum_gb recommended_gb
     case "$NETWORK" in
-        mainnet) recommended_gb=32 ;;
-        testnet) recommended_gb=16 ;;
-        regtest) recommended_gb=8  ;;
-        *)       recommended_gb=16 ;;
+        mainnet) minimum_gb=128; recommended_gb=256 ;;
+        testnet) minimum_gb=16;  recommended_gb=32  ;;
+        regtest) minimum_gb=4;   recommended_gb=8   ;;
+        *)       minimum_gb=16;  recommended_gb=32  ;;
     esac
 
-    if [ "$total_gb" -lt "$recommended_gb" ]; then
-        echo_warning "Less than recommended (${recommended_gb}GB for $NETWORK). Expect slow sync / OOM."
+    if [ "$total_gb" -lt "$minimum_gb" ]; then
+        echo_error "Below minimum (${minimum_gb}GB for $NETWORK). Node will OOM during sync."
         return 1
     fi
-    echo_success "Sufficient RAM for $NETWORK."
+    if [ "$total_gb" -lt "$recommended_gb" ]; then
+        echo_warning "Below recommended (${recommended_gb}GB for $NETWORK). Expect degraded performance."
+        return 1
+    fi
+    echo_success "Sufficient RAM for $NETWORK (${total_gb}GB >= ${recommended_gb}GB recommended)."
     return 0
 }
 
@@ -97,11 +101,20 @@ check_cpu() {
         cores=$(nproc 2>/dev/null || echo 1)
     fi
     echo_info "Cores: $cores"
-    if [ "$cores" -lt 4 ]; then
-        echo_warning "Fewer than 4 cores. Teranode microservices will contend for CPU."
+
+    local recommended_cores
+    case "$NETWORK" in
+        mainnet) recommended_cores=16 ;;
+        testnet) recommended_cores=8  ;;
+        regtest) recommended_cores=4  ;;
+        *)       recommended_cores=8  ;;
+    esac
+
+    if [ "$cores" -lt "$recommended_cores" ]; then
+        echo_warning "Below recommended (${recommended_cores} cores for $NETWORK). Microservices will contend for CPU."
         return 1
     fi
-    echo_success "Enough CPU cores."
+    echo_success "Sufficient cores for $NETWORK (${cores} >= ${recommended_cores} recommended)."
     return 0
 }
 
