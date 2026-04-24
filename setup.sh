@@ -94,9 +94,11 @@ if [ "$MODE" = "full" ]; then
     echo_cyan "Set these up yourself (Caddy, Cloudflare Tunnel, nginx, VPS, etc.)"
     echo_cyan "then tell us the resulting public addresses:"
     echo ""
-    while [ -z "$ASSET_PUBLIC_URL" ]; do
-        ASSET_PUBLIC_URL=$(prompt "Asset API public URL (https://...)" "")
+    ASSET_BASE_URL=""
+    while [ -z "$ASSET_BASE_URL" ]; do
+        ASSET_BASE_URL=$(prompt "Asset API public base URL (https://node.example.com)" "")
     done
+    ASSET_PUBLIC_URL="${ASSET_BASE_URL%/}/api/v1"
     while [ -z "$P2P_ADVERTISE_ADDR" ]; do
         P2P_ADVERTISE_ADDR=$(prompt "P2P advertise addr (host:9905)" "")
     done
@@ -133,7 +135,7 @@ echo "  Client name: $CLIENT_NAME"
 [ -n "$RPC_USER" ]          && echo "  RPC user:    $RPC_USER  (password hidden)"
 echo "  Host IP:     $HOST_IP"
 echo ""
-confirm=$(prompt "Write .env and settings_local.conf? (Y/n)" "Y")
+confirm=$(prompt "Write .env? (Y/n)" "Y")
 [[ "$confirm" =~ ^[Nn] ]] && { echo_warning "Aborted — nothing written."; exit 0; }
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -141,17 +143,15 @@ if [ ! -f "$ENV_FILE" ]; then
     echo_info "Created .env from .env.example"
 fi
 
-export CLIENT_NAME ASSET_PUBLIC_URL P2P_ADVERTISE_ADDR RPC_USER RPC_PASS
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" TERANODE_NETWORK       "$NETWORK"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" SETTINGS_CONTEXT       "docker.m"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" HOST_IP                "$HOST_IP"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" LISTEN_MODE            "$([ "$MODE" = "listen_only" ] && echo listen_only || echo '')"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" ASSET_PUBLIC_URL       "$ASSET_PUBLIC_URL"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" P2P_ADVERTISE_ADDR     "$P2P_ADVERTISE_ADDR"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" RPC_USER               "$RPC_USER"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" RPC_PASS               "$RPC_PASS"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" CLIENT_NAME            "$CLIENT_NAME"
-
-"${REPO_ROOT}/lib/config_generator.sh" "$NETWORK" "$MODE"
 
 echo ""
 echo_green "Setup complete."

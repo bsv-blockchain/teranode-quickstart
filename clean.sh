@@ -72,9 +72,8 @@ if [ "$MODE" = "all" ] || [ "$MODE" = "data" ]; then
 fi
 
 if [ "$MODE" = "all" ] || [ "$MODE" = "config" ]; then
-    log "Removing .env and settings_local.conf..."
-    rm -f .env config/settings_local.conf
-    rm -f config/settings_local.conf.backup.*
+    log "Removing .env..."
+    rm -f .env
 fi
 
 echo_success "Clean complete (mode=$MODE)."

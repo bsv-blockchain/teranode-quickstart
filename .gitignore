@@ -1,7 +1,5 @@
 # User-owned state, never tracked
 .env
-config/settings_local.conf
-config/settings_local.conf.backup.*
 
 # Logs (persistence is via docker volumes, not host paths)
 logs/

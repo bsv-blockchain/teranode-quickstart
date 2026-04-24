@@ -6,7 +6,6 @@ x-teranode-base:
   volumes:
     - ../config/wait.sh:/app/wait.sh
     - ../config/entrypoint.sh:/app/entrypoint.sh
-    - ../config/settings_local.conf:/app/settings_local.conf
     - teranode-data:/app/data
   environment:
     SETTINGS_CONTEXT: ${SETTINGS_CONTEXT:-docker.m}
