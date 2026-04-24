@@ -169,4 +169,12 @@ fi
 
 echo ""
 echo_green "Setup complete."
-echo_info "Next: ./start.sh"
+if [ "$NETWORK" = "teratestnet" ]; then
+    echo_info "Next — pick one:"
+    echo_info "  ./start.sh"
+    echo_info "    (sync from scratch)"
+    echo_info "  ./seed.sh 000000002ea94a515ad9fd40d710fd249fe8610acef7b74f459446812d565187 && ./start.sh"
+    echo_info "    (seed from the canonical teratestnet snapshot first — much faster)"
+else
+    echo_info "Next: ./start.sh"
+fi
