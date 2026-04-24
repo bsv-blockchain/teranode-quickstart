@@ -19,7 +19,7 @@ Standard BSV testnet. Good for realistic integration testing.
 
 ## teratestnet
 
-Shared Teranode training-wheels network run by the BSV Association. Lower block ceiling and a published UTXO snapshot make it the fastest way to get a working node for testing without syncing the real chain.
+Shared Teranode test network run by the BSV Association. A published UTXO snapshot makes it the fastest way to get a working node up for testing without syncing the real chain.
 
 - `blockmaxsize = excessiveblocksize = 1 GB` (enforced smaller than real testnet so the shared network stays approachable).
 - `minminingtxfee = 0`.
