@@ -43,28 +43,19 @@ set +a
 NETWORK="${TERANODE_NETWORK:-testnet}"
 NETWORK_ENV_FILE="${REPO_ROOT}/compose/networks/${NETWORK}.env"
 
-VOLUMES=(
-    teranode-quickstart_teranode-data
-    teranode-quickstart_postgres-data
-    teranode-quickstart_aerospike-data
-    teranode-quickstart_aerospike-smd
-    teranode-quickstart_aerospike-asmt
-    teranode-quickstart_nginx-cache
-    teranode-quickstart_prometheus-data
-    teranode-quickstart_grafana-data
-)
+compose() {
+    if [ -f .env ] && [ -f "$NETWORK_ENV_FILE" ]; then
+        docker compose --env-file .env --env-file "$NETWORK_ENV_FILE" "$@"
+    else
+        docker compose "$@"
+    fi
+}
 
 if [ "$FORCE" -eq 0 ]; then
     echo_yellow "WARNING: this will permanently delete data (mode=$MODE)."
     if [ "$MODE" = "all" ] || [ "$MODE" = "data" ]; then
-        echo "Volumes that will be removed:"
-        for v in "${VOLUMES[@]}"; do
-            if docker volume inspect "$v" >/dev/null 2>&1; then
-                echo "  $v (exists)"
-            else
-                echo "  $v (doesn't exist)"
-            fi
-        done
+        echo "Compose-managed volumes that will be removed:"
+        compose config --volumes 2>/dev/null | sed 's/^/  /' || echo "  (compose config not readable)"
     fi
     if [ "$MODE" = "all" ] || [ "$MODE" = "config" ]; then
         echo "Config that will be removed: .env"
@@ -76,16 +67,8 @@ if [ "$FORCE" -eq 0 ]; then
 fi
 
 if [ "$MODE" = "all" ] || [ "$MODE" = "data" ]; then
-    log "Taking stack down with -v (removes compose-managed volumes)..."
-    if [ -f "$NETWORK_ENV_FILE" ]; then
-        docker compose --env-file .env --env-file "$NETWORK_ENV_FILE" down -v 2>/dev/null || true
-    else
-        docker compose down -v 2>/dev/null || true
-    fi
-    log "Removing named volumes (best-effort)..."
-    for v in "${VOLUMES[@]}"; do
-        docker volume rm "$v" 2>/dev/null || true
-    done
+    log "docker compose down -v ..."
+    compose down -v 2>/dev/null || true
 fi
 
 if [ "$MODE" = "all" ] || [ "$MODE" = "config" ]; then
