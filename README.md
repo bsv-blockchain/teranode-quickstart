@@ -131,7 +131,7 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 | `./update.sh`    | Check GitHub for a newer Teranode release; bump `.env`; pull; restart. See below. |
 | `./cli.sh …`     | Run `teranode-cli` inside the blockchain container (FSM state, seeder, admin). Ex: `./cli.sh getfsmstate` |
 | `./rpc.sh …`     | Call JSON-RPC at localhost:9292 (chain queries, TX submission). Ex: `./rpc.sh getblockcount` |
-| `./seed.sh`      | Seed UTXO state from a snapshot ZIP. Supply `<block-hash>`; URL defaults to the teratestnet snapshot base (**only supported source at the moment** — for other networks you must provide your own URL as the second arg). |
+| `./seed.sh`      | Seed UTXO state. Args: `<block-hash> [url-or-local-dir]`. teratestnet auto-derives the URL; for mainnet / testnet bring your own — either a URL to a compatible snapshot ZIP or a local directory path already containing seed data. |
 | `./status.sh`    | `docker compose ps` + FSM state + block count.              |
 | `./logs.sh [svc]`| Tail logs for a service or all services.                    |
 | `./clean.sh`     | Remove volumes / config. See flags with `./clean.sh --help`.|
