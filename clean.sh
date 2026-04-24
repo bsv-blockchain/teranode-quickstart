@@ -1,9 +1,11 @@
 #!/bin/bash
 # Cleanup. Destructive — warns unless --force.
+# Default: remove data volumes only. .env is preserved unless you ask.
 # Flags:
-#   --data-only      Remove named volumes only (keep .env, settings)
-#   --config-only    Remove .env and settings_local.conf (keep volumes)
-#   --all            Remove everything (volumes + .env + settings)
+#   (no flag)        Remove named volumes only (same as --data-only)
+#   --data-only      Remove named volumes only (keep .env)
+#   --config-only    Remove .env (keep volumes)
+#   --all            Remove everything (volumes + .env)
 #   --force          Skip confirmation prompts
 #   --quiet          Suppress progress output
 
@@ -14,7 +16,7 @@ cd "$REPO_ROOT"
 
 source "${REPO_ROOT}/lib/colors.sh"
 
-MODE="all"
+MODE="data"
 FORCE=0
 QUIET=0
 for arg in "$@"; do
