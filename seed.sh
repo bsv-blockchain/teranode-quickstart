@@ -2,21 +2,25 @@
 # Seed Teranode from a UTXO snapshot.
 #
 # Usage:
-#   ./seed.sh <snapshot-url> <block-hash>
-#   ./seed.sh                                  # reads SEED_URL and SEED_HASH from .env
+#   ./seed.sh <block-hash>                     # uses the teratestnet snapshot base
+#   ./seed.sh <block-hash> <snapshot-url>      # explicit URL (any provider)
+#   ./seed.sh                                  # reads SEED_HASH [+ SEED_URL] from .env
+#
+# CURRENT LIMITATION:
+#   Snapshots are only published for teratestnet at the moment, at
+#     https://svnode-snapshots.bsvb.tech/teratestnet/<hash>.zip
+#   Supply just the block hash and this script derives that URL. For mainnet
+#   and standard BSV testnet, no canonical snapshot source exists yet — you
+#   would need to host one yourself and pass the URL as the second argument.
 #
 # Requires:
 #   - Stack NOT running (or data volumes empty). Seeding populates Aerospike
 #     and Postgres directly; running services will conflict. Run ./clean.sh
 #     first if you're reseeding.
-#   - Snapshot URL points at a ZIP file the Teranode seeder knows how to read.
-#     For teratestnet the canonical URL is
-#     https://svnode-snapshots.bsvb.tech/teratestnet/<hash>.zip
-#     For mainnet/testnet, consult upstream guidance for a trusted snapshot.
 #
 # Note: snapshots are typically pruned — spent UTXOs are NOT in the seed, so
 # historical queries return less than a fully-synced node. For complete
-# transaction history, start without seeding and wait for the full sync.
+# transaction history, skip seeding and let the node sync from scratch.
 
 set -e
 
@@ -29,14 +33,24 @@ set -a
 [ -f .env ] && source .env
 set +a
 
-URL="${1:-$SEED_URL}"
-HASH="${2:-$SEED_HASH}"
+TERATESTNET_SNAPSHOT_BASE="https://svnode-snapshots.bsvb.tech/teratestnet"
 
-if [ -z "$URL" ] || [ -z "$HASH" ]; then
-    echo_error "Missing snapshot URL or block hash."
-    echo_info "Usage: ./seed.sh <snapshot-url> <block-hash>"
-    echo_info "Or set SEED_URL and SEED_HASH in .env"
+HASH="${1:-$SEED_HASH}"
+URL="${2:-$SEED_URL}"
+
+if [ -z "$HASH" ]; then
+    echo_error "Missing block hash."
+    echo_info "Usage: ./seed.sh <block-hash> [snapshot-url]"
+    echo_info "Or set SEED_HASH (and optionally SEED_URL) in .env"
     exit 2
+fi
+
+if [ -z "$URL" ]; then
+    URL="${TERATESTNET_SNAPSHOT_BASE}/${HASH}.zip"
+    echo_warning "No URL supplied — defaulting to the teratestnet snapshot base."
+    echo_warning "This is the only snapshot source currently published. If you are"
+    echo_warning "seeding mainnet or standard BSV testnet, you must supply your own URL."
+    echo_info "Derived URL: $URL"
 fi
 
 if ! command -v unzip >/dev/null 2>&1; then
