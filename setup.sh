@@ -109,19 +109,23 @@ fi
 CLIENT_NAME=$(prompt "Client name (shown in explorer)" "My Teranode")
 echo ""
 
-if [ "$MODE" = "full" ] || [ "$NETWORK" = "regtest" ]; then
-    rpc_choice=$(pick_one "RPC credentials?" "auto-generate" "enter manually" "leave blank (no RPC)")
-    case "$rpc_choice" in
-        auto*)   RPC_USER="teranode"; RPC_PASS=$(gen_secret) ;;
-        enter*)
+rpc_choice=$(pick_one "RPC credentials?" "auto-generate" "enter manually")
+case "$rpc_choice" in
+    auto*)
+        RPC_USER="teranode"
+        RPC_PASS=$(gen_secret)
+        ;;
+    enter*)
+        RPC_USER=""
+        while [ -z "$RPC_USER" ]; do
             RPC_USER=$(prompt "RPC user" "teranode")
+        done
+        RPC_PASS=""
+        while [ -z "$RPC_PASS" ]; do
             RPC_PASS=$(prompt "RPC password" "$(gen_secret)")
-            ;;
-        *) RPC_USER=""; RPC_PASS="" ;;
-    esac
-else
-    RPC_USER=""; RPC_PASS=""
-fi
+        done
+        ;;
+esac
 
 HOST_IP=$(prompt "Host IP to bind ports (127.0.0.1 = localhost only)" "127.0.0.1")
 
