@@ -106,7 +106,8 @@ if [ "$MODE" = "full" ]; then
     echo ""
 fi
 
-CLIENT_NAME=$(prompt "Client name (shown in explorer)" "My Teranode")
+default_client_name="teranode-$(gen_secret | head -c 4)"
+CLIENT_NAME=$(prompt "Client name (shown in explorer)" "$default_client_name")
 echo ""
 
 rpc_choice=$(pick_one "RPC credentials?" "auto-generate" "enter manually")
