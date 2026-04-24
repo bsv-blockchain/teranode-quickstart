@@ -27,8 +27,8 @@ if docker ps --format '{{.Names}}' | grep -q '^blockchain$'; then
     echo_green "=== FSM state ==="
     docker exec blockchain teranode-cli getfsmstate 2>/dev/null || echo_warning "blockchain running but CLI call failed"
     echo ""
-    echo_green "=== Block count (via RPC) ==="
-    "${REPO_ROOT}/rpc.sh" getblockcount 2>/dev/null || echo_warning "RPC call failed — check RPC_USER / RPC_PASS in .env"
+    echo_green "=== Chain info (via RPC) ==="
+    "${REPO_ROOT}/rpc.sh" getblockchaininfo 2>/dev/null || echo_warning "RPC call failed — check RPC_USER / RPC_PASS in .env"
 else
     echo_warning "blockchain container not running — start with ./start.sh"
 fi
