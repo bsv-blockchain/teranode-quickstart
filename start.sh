@@ -35,6 +35,11 @@ echo "  Prometheus:     http://localhost:9090"
 echo "  Kafka console:  http://localhost:8080"
 echo "  Asset viewer:   http://localhost:8090"
 echo "  RPC endpoint:   http://localhost:9292"
+if [ "${HOST_IP:-127.0.0.1}" = "0.0.0.0" ]; then
+    echo ""
+    echo_info "HOST_IP=0.0.0.0 — the asset endpoint is also reachable from another"
+    echo_info "machine on the LAN at this host's IP (replace 'localhost' above)."
+fi
 echo ""
 echo_info "Tail logs:  ./logs.sh blockchain"
 echo_info "Status:     ./status.sh"

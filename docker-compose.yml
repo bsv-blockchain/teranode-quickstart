@@ -34,6 +34,8 @@ services:
     extends:
       file: ./compose/docker-services.yml
       service: asset-cache
+    profiles:
+      - p2p
 
   rpc:
     extends:

@@ -141,9 +141,9 @@ esac
 
 echo ""
 echo_cyan "Host IP binding — controls ONLY these 3 ports:"
-echo "   8090  asset viewer UI"
-echo "   8000  asset-cache public API (full mode)"
-echo "   9905  P2P inbound (full mode)"
+echo "   8090  asset viewer UI                  (always on)"
+echo "   8000  asset-cache public API           (p2p profile only)"
+echo "   9905  P2P inbound peer connections     (p2p profile only)"
 echo_cyan "Everything else (RPC, Grafana, Prometheus, Kafka, Postgres, Aerospike) stays"
 echo_cyan "hardcoded to 127.0.0.1 regardless. Options:"
 echo "   127.0.0.1  localhost only (safe default, works behind NAT)"
