@@ -8,16 +8,16 @@ A Docker-based one-command setup for running a [Teranode](https://github.com/bsv
 
 Running `./setup.sh && ./start.sh` stands up:
 
-| Service                 | Purpose                                        | Port (host)          |
-|-------------------------|------------------------------------------------|----------------------|
-| Teranode microservices  | blockchain, asset, propagation, rpc, etc.      | various (see below)  |
-| PostgreSQL 17           | Blockchain state & indexes                     | 127.0.0.1:5432       |
-| Redpanda (Kafka)        | Inter-service event streaming                  | 127.0.0.1:9092       |
-| Aerospike 8.1 (CE)      | UTXO store (640 GB cap)                        | 127.0.0.1:3000       |
-| Prometheus              | Metrics                                        | 127.0.0.1:9090       |
-| Grafana                 | Dashboards (Teranode + Aerospike)              | http://localhost:3005 |
-| Kafka Console           | Topic viewer with protobuf decoding            | http://localhost:8080 |
-| Nginx asset cache       | Caching reverse proxy for asset API            | 127.0.0.1:8000       |
+| Service                | Purpose                                   | Port (host)           |
+|------------------------|-------------------------------------------|-----------------------|
+| Teranode microservices | blockchain, asset, propagation, rpc, etc. | various (see below)   |
+| PostgreSQL 17          | Blockchain state & indexes                | 127.0.0.1:5432        |
+| Redpanda (Kafka)       | Inter-service event streaming             | 127.0.0.1:9092        |
+| Aerospike 8.1.2        | UTXO store                                | 127.0.0.1:3000        |
+| Prometheus             | Metrics                                   | 127.0.0.1:9090        |
+| Grafana                | Dashboards (Teranode + Aerospike)         | http://localhost:3005 |
+| Kafka Console          | Topic viewer with protobuf decoding       | http://localhost:8080 |
+| Nginx asset cache      | Caching reverse proxy for asset API       | 127.0.0.1:8000        |
 
 All services are internal by default. `HOST_IP` in `.env` controls binding for **only these 3 ports**:
 
