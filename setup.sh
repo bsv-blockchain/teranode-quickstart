@@ -170,9 +170,11 @@ confirm=$(prompt "Write .env? (Y/n)" "Y")
 
 if [ -f "$ENV_FILE" ]; then
     cp "$ENV_FILE" "${ENV_FILE}.bak"
+    chmod 600 "${ENV_FILE}.bak"
     echo_info "Backed up existing .env to .env.bak"
 fi
 cp "$ENV_EXAMPLE" "$ENV_FILE"
+chmod 600 "$ENV_FILE"
 echo_info "Wrote fresh .env from .env.example"
 
 case "$NETWORK" in
