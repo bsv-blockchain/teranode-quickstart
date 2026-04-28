@@ -13,7 +13,7 @@ Running `./setup.sh && ./start.sh` stands up:
 | Teranode microservices  | blockchain, asset, propagation, rpc, etc.      | various (see below)  |
 | PostgreSQL 17           | Blockchain state & indexes                     | 127.0.0.1:5432       |
 | Redpanda (Kafka)        | Inter-service event streaming                  | 127.0.0.1:9092       |
-| Aerospike 8.1 (EE)      | UTXO store (1 TB, eval mode)                   | 127.0.0.1:3000       |
+| Aerospike 8.1           | UTXO store. EE (eval, 1 TB) default; CE (640 GB) via `AEROSPIKE_SERVICE` | 127.0.0.1:3000       |
 | Prometheus              | Metrics                                        | 127.0.0.1:9090       |
 | Grafana                 | Dashboards (Teranode + Aerospike)              | http://localhost:3005 |
 | Kafka Console           | Topic viewer with protobuf decoding            | http://localhost:8080 |
@@ -48,6 +48,10 @@ Mainnet is memory-hungry: Aerospike holds the full UTXO set in memory and the Te
 SSD storage is strongly recommended everywhere — HDDs will bottleneck Aerospike and Postgres.
 
 `./lib/check_requirements.sh` verifies these before setup.
+
+### Aerospike edition
+
+The default is Enterprise Edition (EE) in evaluation mode — 1 TB UTXO capacity, license expires after 30 days. Switch to Community Edition by setting `AEROSPIKE_SERVICE=aerospike` in `.env`; CE is capped at **640 GB** which is below the current **mainnet UTXO size**, so CE is only viable on testnet / teratestnet / regtest. For long-running mainnet nodes, plan for either an EE license renewal or a hosted Aerospike alternative.
 
 ## Seeding
 
