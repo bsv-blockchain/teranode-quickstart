@@ -30,7 +30,7 @@ echo ""
 
 echo ""
 echo_success "Stack up. Useful URLs:"
-echo "  Grafana:        http://localhost:3005 (admin/admin)"
+echo "  Grafana:        http://localhost:3005 (initial login: admin/admin — Grafana will prompt to change)"
 echo "  Prometheus:     http://localhost:9090"
 echo "  Kafka console:  http://localhost:8080"
 echo "  Asset viewer:   http://localhost:8090"
