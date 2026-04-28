@@ -1,27 +1,24 @@
 #!/bin/bash
 set -eo pipefail
 
-# Function to wait for a service
+# Wait for a service's TCP port + a grace period before continuing.
+# Usage: wait_for_service <host> <port> <grace_seconds>
 wait_for_service() {
-  local host=$1
-  local port=$2
-  local retries=$3
-  shift 3
-  /app/wait.sh "$host" "$port" "$retries" -- "$@"
+  /app/wait.sh "$1" "$2" "$3"
 }
 
-# Conditionally wait for Aerospike if using local instance
 if [ "$USE_LOCAL_AEROSPIKE" = "true" ]; then
   wait_for_service aerospike 3000 2
 fi
 
+# postgres: 11s grace because postmaster opens the TCP port before
+# accepting connections (postmaster vs pg_isready window).
 if [ "$USE_LOCAL_POSTGRES" = "true" ]; then
-  wait_for_service postgres 5432 1
+  wait_for_service postgres 5432 11
 fi
 
 if [ "$USE_LOCAL_KAFKA" = "true" ]; then
   wait_for_service kafka-shared 9092 0
 fi
 
-# Execute the main application
 exec /app/teranode.run "$@"

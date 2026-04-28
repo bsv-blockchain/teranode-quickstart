@@ -1,25 +1,18 @@
 #!/bin/bash
-# wait-for-port.sh
+# Wait for a TCP port to become reachable, then sleep a grace period.
+# Usage: wait.sh <host> <port> <grace_seconds>
 
 set -eo pipefail
 
 host="$1"
 port="$2"
 waitfor="$3"
-shift 3
-cmd="$@"
 
 until (echo > /dev/tcp/"$host"/"$port") &>/dev/null; do
   >&2 echo "$host:$port is unavailable - sleeping"
   sleep 1
 done
 
->&2 echo "$host:$port is up - waiting for $waitfor seconds before executing command"
+>&2 echo "$host:$port is up - waiting ${waitfor}s grace period"
 sleep "$waitfor"
-
-if [ "$host" = "postgres" ]; then
-  sleep 10
-fi
-
->&2 echo "$host:$port is up - executing command"
-exec $cmd
+>&2 echo "$host:$port ready"
