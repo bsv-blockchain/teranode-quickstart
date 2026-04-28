@@ -9,16 +9,16 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/colors.sh"
 
-ASSET_PUBLIC_URL="${1:-$ASSET_PUBLIC_URL}"
-P2P_ADVERTISE_ADDR="${2:-$P2P_ADVERTISE_ADDR}"
+asset_httpPublicAddress="${1:-$asset_httpPublicAddress}"
+p2p_advertise_addresses="${2:-$p2p_advertise_addresses}"
 
 check_asset_url() {
-    if [ -z "$ASSET_PUBLIC_URL" ]; then
-        echo_info "ASSET_PUBLIC_URL not set; skipping asset reachability probe (listen-only mode)."
+    if [ -z "$asset_httpPublicAddress" ]; then
+        echo_info "asset_httpPublicAddress not set; skipping asset reachability probe (listen-only mode)."
         return 0
     fi
-    echo_info "Probing ASSET_PUBLIC_URL=$ASSET_PUBLIC_URL ..."
-    local probe_url="${ASSET_PUBLIC_URL%/}/health"
+    echo_info "Probing asset_httpPublicAddress=$asset_httpPublicAddress ..."
+    local probe_url="${asset_httpPublicAddress%/}/health"
     local code
     code=$(docker run --rm curlimages/curl:8.8.0 -s -o /dev/null -w '%{http_code}' --max-time 15 "$probe_url" 2>/dev/null || echo "000")
     case "$code" in
@@ -38,14 +38,14 @@ check_asset_url() {
 }
 
 check_p2p_addr() {
-    if [ -z "$P2P_ADVERTISE_ADDR" ]; then
-        echo_info "P2P_ADVERTISE_ADDR not set; skipping P2P probe (listen-only mode)."
+    if [ -z "$p2p_advertise_addresses" ]; then
+        echo_info "p2p_advertise_addresses not set; skipping P2P probe (listen-only mode)."
         return 0
     fi
-    local host="${P2P_ADVERTISE_ADDR%:*}"
-    local port="${P2P_ADVERTISE_ADDR##*:}"
+    local host="${p2p_advertise_addresses%:*}"
+    local port="${p2p_advertise_addresses##*:}"
     if [ "$host" = "$port" ] || [ -z "$port" ]; then
-        echo_error "P2P_ADVERTISE_ADDR must be host:port (got '$P2P_ADVERTISE_ADDR')"
+        echo_error "p2p_advertise_addresses must be host:port (got '$p2p_advertise_addresses')"
         return 1
     fi
     echo_info "Probing P2P TCP connect to $host:$port ..."

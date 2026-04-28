@@ -36,19 +36,8 @@ done
 
 log() { [ "$QUIET" -eq 0 ] && echo_info "$1"; }
 
-set -a
-[ -f .env ] && source .env
-set +a
-
-NETWORK="${TERANODE_NETWORK:-testnet}"
-NETWORK_ENV_FILE="${REPO_ROOT}/compose/networks/${NETWORK}.env"
-
 compose() {
-    if [ -f .env ] && [ -f "$NETWORK_ENV_FILE" ]; then
-        docker compose --env-file .env --env-file "$NETWORK_ENV_FILE" "$@"
-    else
-        docker compose "$@"
-    fi
+    docker compose "$@"
 }
 
 if [ "$FORCE" -eq 0 ]; then

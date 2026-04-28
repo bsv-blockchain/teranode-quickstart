@@ -86,6 +86,17 @@ esac
 echo_info "Mode: $MODE"
 echo ""
 
+echo_cyan "Archival mode runs the optional blockpersister service, which keeps full"
+echo_cyan "raw block history on disk. Most operators don't need it (Teranode prunes"
+echo_cyan "spent UTXOs after 288 blocks by default). Useful for indexers / explorers /"
+echo_cyan "research. Costs significant disk (multiple TB on mainnet)."
+ARCHIVAL=$(pick_one "Enable archival mode?" "no (recommended)" "yes (run blockpersister)")
+case "$ARCHIVAL" in
+    "yes"*) ARCHIVAL=true ;;
+    *)      ARCHIVAL=false ;;
+esac
+echo ""
+
 ASSET_PUBLIC_URL=""
 P2P_ADVERTISE_ADDR=""
 if [ "$MODE" = "full" ]; then
@@ -143,6 +154,7 @@ echo ""
 echo_green "Summary"
 echo "  Network:     $NETWORK"
 echo "  Mode:        $MODE"
+echo "  Archival:    $ARCHIVAL"
 echo "  Client name: $CLIENT_NAME"
 [ -n "$ASSET_PUBLIC_URL" ]  && echo "  Asset URL:   $ASSET_PUBLIC_URL"
 [ -n "$P2P_ADVERTISE_ADDR" ] && echo "  P2P addr:    $P2P_ADVERTISE_ADDR"
@@ -157,15 +169,29 @@ if [ ! -f "$ENV_FILE" ]; then
     echo_info "Created .env from .env.example"
 fi
 
-"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" TERANODE_NETWORK       "$NETWORK"
-"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" SETTINGS_CONTEXT       "docker.m"
-"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" HOST_IP                "$HOST_IP"
-"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" LISTEN_MODE            "$([ "$MODE" = "listen_only" ] && echo listen_only || echo '')"
-"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" ASSET_PUBLIC_URL       "$ASSET_PUBLIC_URL"
-"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" P2P_ADVERTISE_ADDR     "$P2P_ADVERTISE_ADDR"
-"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" RPC_USER               "$RPC_USER"
-"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" RPC_PASS               "$RPC_PASS"
-"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" CLIENT_NAME            "$CLIENT_NAME"
+case "$NETWORK" in
+    mainnet)     MIN_FEE="0.00000100"; BLOCK_MAX="4294967296"; EXCESSIVE="10737418240" ;;
+    testnet)     MIN_FEE="0.00000001"; BLOCK_MAX="4294967296"; EXCESSIVE="10737418240" ;;
+    regtest)     MIN_FEE="0";          BLOCK_MAX="4294967296"; EXCESSIVE="10737418240" ;;
+    teratestnet) MIN_FEE="0.00000001"; BLOCK_MAX="1073741824"; EXCESSIVE="1073741824"  ;;
+esac
+
+PROFILES="legacy,p2p"
+[ "$ARCHIVAL" = "true" ] && PROFILES="${PROFILES},blockpersister"
+
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" network                  "$NETWORK"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" SETTINGS_CONTEXT         "docker.m"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" HOST_IP                  "$HOST_IP"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" COMPOSE_PROFILES         "$PROFILES"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" listen_mode              "$([ "$MODE" = "listen_only" ] && echo listen_only || echo '')"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" asset_httpPublicAddress  "$ASSET_PUBLIC_URL"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" p2p_advertise_addresses  "$P2P_ADVERTISE_ADDR"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" rpc_user                 "$RPC_USER"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" rpc_pass                 "$RPC_PASS"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" clientName               "$CLIENT_NAME"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" minminingtxfee           "$MIN_FEE"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" blockmaxsize             "$BLOCK_MAX"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" excessiveblocksize       "$EXCESSIVE"
 
 echo ""
 echo_green "Setup complete."

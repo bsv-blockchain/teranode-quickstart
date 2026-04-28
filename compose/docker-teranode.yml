@@ -7,6 +7,8 @@ x-teranode-base:
     - ../config/wait.sh:/app/wait.sh
     - ../config/entrypoint.sh:/app/entrypoint.sh
     - teranode-data:/app/data
+  env_file:
+    - ../.env
   environment:
     SETTINGS_CONTEXT: ${SETTINGS_CONTEXT:-docker.m}
     USE_LOCAL_AEROSPIKE: "true"
@@ -24,7 +26,7 @@ services:
         limits:
           cpus: '1.0'
     healthcheck:
-      test: ["CMD-SHELL", "netstat -ltn | grep -q ':8087 '"]
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
       interval: 5s
       timeout: 30s
       retries: 10
@@ -46,7 +48,7 @@ services:
       blockchain:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "netstat -ltn | grep -q ':8091 '"]
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
       interval: 5s
       timeout: 30s
       retries: 10
@@ -65,6 +67,12 @@ services:
     depends_on:
       blockchain:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
+      interval: 5s
+      timeout: 30s
+      retries: 10
+      start_period: 7s
     restart: on-failure
 
   subtreevalidation:
@@ -82,7 +90,7 @@ services:
       blockchain:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "netstat -ltn | grep -q ':8086 '"]
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
       interval: 5s
       timeout: 30s
       retries: 10
@@ -102,7 +110,7 @@ services:
       blockchain:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "netstat -ltn | grep -q ':8088 '"]
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
       interval: 5s
       timeout: 30s
       retries: 10
@@ -122,7 +130,7 @@ services:
       blockchain:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "netstat -ltn | grep -q ':8085 '"]
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
       interval: 5s
       timeout: 30s
       retries: 10
@@ -148,7 +156,7 @@ services:
       blockassembly:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "netstat -ltn | grep -q ':8084 '"]
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
       interval: 5s
       timeout: 30s
       retries: 10
@@ -170,7 +178,7 @@ services:
       blockchain:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "netstat -ltn | grep -q ':9905 '"]
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
       interval: 5s
       timeout: 30s
       retries: 10
@@ -189,7 +197,7 @@ services:
     ports:
       - "127.0.0.1:9292:9292"
     healthcheck:
-      test: ["CMD-SHELL", "netstat -ltn | grep -q ':9292 '"]
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
       interval: 5s
       timeout: 30s
       retries: 10
@@ -208,7 +216,7 @@ services:
       blockchain:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "netstat -ltn | grep -q ':8096 '"]
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
       interval: 5s
       timeout: 30s
       retries: 10
@@ -227,8 +235,14 @@ services:
         condition: service_healthy
       blockassembly:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
+      interval: 5s
+      timeout: 30s
+      retries: 10
+      start_period: 7s
     profiles:
-      - archival
+      - blockpersister
     restart: on-failure
 
   seeder:

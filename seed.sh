@@ -46,8 +46,7 @@ if [ -z "$HASH" ]; then
     exit 2
 fi
 
-NETWORK="${TERANODE_NETWORK:-testnet}"
-NETWORK_ENV_FILE="${REPO_ROOT}/compose/networks/${NETWORK}.env"
+NETWORK="${network:-testnet}"
 
 # Resolve source into an on-disk directory that will be bind-mounted into the seeder.
 if [ -z "$SOURCE" ]; then
@@ -103,10 +102,7 @@ else
 fi
 
 echo_info "Starting seeder service + dependencies (aerospike, postgres, kafka) ..."
-SEED_DATA_PATH="$MOUNT_DIR" docker compose \
-    --env-file .env \
-    --env-file "$NETWORK_ENV_FILE" \
-    --profile seeding up -d seeder
+SEED_DATA_PATH="$MOUNT_DIR" docker compose --profile seeding up -d seeder
 
 echo_info "Waiting 10s for dependencies to settle ..."
 sleep 10
@@ -116,11 +112,11 @@ if docker exec seeder teranode-cli seeder -inputDir /seed -hash "$HASH"; then
     echo_success "Seeding completed."
 else
     echo_error "Seeding failed."
-    docker compose --env-file .env --env-file "$NETWORK_ENV_FILE" --profile seeding down
+    docker compose --profile seeding down
     exit 1
 fi
 
 echo_info "Stopping seeder ..."
-docker compose --env-file .env --env-file "$NETWORK_ENV_FILE" --profile seeding down
+docker compose --profile seeding down
 
 echo_success "Done. Run ./start.sh to bring the full stack up with the seeded data."

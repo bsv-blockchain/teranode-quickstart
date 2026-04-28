@@ -19,8 +19,8 @@ set -a
 [ -f .env ] && source .env
 set +a
 
-if [ -z "$RPC_USER" ] || [ -z "$RPC_PASS" ]; then
-    echo "Error: RPC_USER / RPC_PASS not set in .env — run ./setup.sh" >&2
+if [ -z "$rpc_user" ] || [ -z "$rpc_pass" ]; then
+    echo "Error: rpc_user / rpc_pass not set in .env — run ./setup.sh" >&2
     exit 1
 fi
 
@@ -45,7 +45,7 @@ PARAMS="${PARAMS%,}"
 
 BODY="{\"jsonrpc\":\"1.0\",\"id\":\"quickstart\",\"method\":\"$METHOD\",\"params\":[$PARAMS]}"
 
-response=$(curl -sS -u "$RPC_USER:$RPC_PASS" \
+response=$(curl -sS -u "$rpc_user:$rpc_pass" \
     -H 'Content-Type: application/json' \
     --data "$BODY" \
     http://localhost:9292/)
