@@ -123,7 +123,7 @@ check_cpu() {
 
 check_ports() {
     echo_info "Checking for port conflicts..."
-    local ports=(3000 3005 5432 8000 8080 8081 8084 8090 9090 9091 9092 9292 9905)
+    local ports=(3000 3005 5432 8000 8080 8081 8084 8090 9090 9092 9292 9905)
     local conflicts=()
     for port in "${ports[@]}"; do
         if lsof -i ":$port" 2>/dev/null | grep -q LISTEN; then
