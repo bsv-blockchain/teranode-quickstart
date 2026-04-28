@@ -59,14 +59,7 @@ echo_info "Selected: $NETWORK"
 echo ""
 
 if [ "$NETWORK" = "mainnet" ]; then
-    echo_yellow "WARNING: Teranode mainnet support is still maturing."
-    echo_yellow "The upstream project has not declared production readiness."
-    echo_yellow "Do not run this on consensus-critical infrastructure yet."
-    confirm=$(prompt "Type 'I understand' to continue" "")
-    if [ "$confirm" != "I understand" ]; then
-        echo_error "Aborting."
-        exit 1
-    fi
+    echo_yellow "Mainnet has substantial resource requirements; review docs/NETWORKS.md before continuing."
     echo ""
 fi
 

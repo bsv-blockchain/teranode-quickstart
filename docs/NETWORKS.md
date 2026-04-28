@@ -13,7 +13,7 @@ Per-network values written by `setup.sh` into `.env`:
 
 ## mainnet
 
-Real BSV mainnet. **Still maturing in Teranode** — not yet production-validated upstream. `setup.sh` requires an `I understand` confirmation.
+Real BSV mainnet.
 
 - **Budget 256 GB RAM, 2 TB+ SSD, 16+ cores.** 128 GB is the floor; below that you OOM during sync.
 - Full mode is the point — listen-only mainnet is mostly a curiosity. Set `listen_mode=full` and add `p2p` to `COMPOSE_PROFILES`.

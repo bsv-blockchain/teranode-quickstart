@@ -259,7 +259,7 @@ For remote RPC access: put an authenticated reverse proxy in front of 9292 on an
 - **Aerospike fails with "device full" / "out of space"** — UTXO has outgrown the 640 GB CE cap. See the Aerospike subsection in Prerequisites for capacity-expansion options.
 - **Grafana shows "No data"** — Prometheus needs ~1 minute to scrape the first datapoints. If still empty, check `http://localhost:9090/targets`.
 - **Port X already in use** — another process holds the port. `lsof -i :X` to find it. Edit `HOST_IP` or remap in `docker-compose.yml`.
-- **Mainnet sync stuck** — mainnet Teranode is still maturing. Expect rough edges. Check the [upstream release notes](https://github.com/bsv-blockchain/teranode/releases).
+- **Mainnet sync stuck** — check the [upstream release notes](https://github.com/bsv-blockchain/teranode/releases) for known issues; if nothing fits, open an issue at the upstream repo.
 
 For anything that smells like a Teranode bug (not a quickstart bug): open an issue at [bsv-blockchain/teranode](https://github.com/bsv-blockchain/teranode/issues).
 
@@ -267,7 +267,7 @@ For anything that smells like a Teranode bug (not a quickstart bug): open an iss
 
 ## Disclaimer
 
-Teranode is under active development. Mainnet support is not yet production-validated by the upstream project — `setup.sh` prompts for explicit confirmation before writing a mainnet config. Run mainnet nodes at your own risk. See [docs/NETWORKS.md](docs/NETWORKS.md).
+Teranode is under active development. Per-network caveats and recommended budgets live in [docs/NETWORKS.md](docs/NETWORKS.md) — read it before deciding to run on a particular network.
 
 ---
 
