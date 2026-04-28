@@ -7,10 +7,13 @@ TERANODE_REPO="bsv-blockchain/teranode"
 GH_API="https://api.github.com/repos/${TERANODE_REPO}"
 
 latest_release_tag() {
+    # GitHub API returns pretty-printed JSON; anchor on indented top-level
+    # "tag_name" key so we don't accidentally match the literal string inside
+    # release notes or other fields.
     curl -sSL -H "Accept: application/vnd.github+json" "${GH_API}/releases/latest" \
-        | grep -E '"tag_name"' \
+        | grep -E '^[[:space:]]*"tag_name"[[:space:]]*:' \
         | head -1 \
-        | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/'
+        | sed -E 's/^[[:space:]]*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/'
 }
 
 release_html_url() {
@@ -21,9 +24,9 @@ release_html_url() {
 release_body_summary() {
     local tag="$1"
     curl -sSL -H "Accept: application/vnd.github+json" "${GH_API}/releases/tags/${tag}" \
-        | grep -E '"body"' \
+        | grep -E '^[[:space:]]*"body"[[:space:]]*:' \
         | head -1 \
-        | sed -E 's/.*"body"[[:space:]]*:[[:space:]]*"(.*)".*/\1/' \
+        | sed -E 's/^[[:space:]]*"body"[[:space:]]*:[[:space:]]*"(.*)".*/\1/' \
         | sed 's/\\r\\n/\n/g; s/\\n/\n/g' \
         | head -20
 }
