@@ -49,6 +49,8 @@ source .env
 set +a
 
 CURRENT="${TERANODE_VERSION:-unknown}"
+# Strip whitespace / CR (defends against hand-edits, Windows line endings).
+CURRENT="${CURRENT//[[:space:]]/}"
 
 if [ -n "$PIN_TAG" ]; then
     TARGET="$PIN_TAG"
