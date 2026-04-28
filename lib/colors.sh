@@ -1,4 +1,5 @@
 #!/bin/bash
+# Shell colour codes + echo_* helpers. Sourced by every script in this repo.
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
