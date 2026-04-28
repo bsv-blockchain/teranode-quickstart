@@ -148,7 +148,7 @@ Only switch to `server` if you know what you're doing. Most operators should lea
 
 1. Own a public endpoint (domain + TLS) that proxies to this host's port 8000 (asset cache) and can accept inbound TCP on port 9905 (P2P).
 2. Configure the reverse proxy / firewall yourself. This repo is opinion-free on how — use Caddy, Cloudflare Tunnel, nginx + Let's Encrypt, a VPS with a domain, whatever fits your infrastructure.
-3. Provide the resulting `ASSET_PUBLIC_URL` and `P2P_ADVERTISE_ADDR` to `setup.sh`.
+3. Provide the resulting `asset_httpPublicAddress` (full URL incl. `/api/v1`) and `p2p_advertise_addresses` (libp2p multiaddr, e.g. `/dns4/host/tcp/9905`) to `setup.sh`.
 
 After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared endpoints from a throwaway container and reports pass/fail. It's a diagnostic, not a gate — you can ignore it if you know better.
 
@@ -243,7 +243,7 @@ teranode-quickstart/
 The RPC service binds to `127.0.0.1:9292` (never exposed externally by this repo). Credentials come from `.env`:
 
 ```bash
-curl -u "$RPC_USER:$RPC_PASS" -H 'Content-Type: application/json' \
+curl -u "$rpc_user:$rpc_pass" -H 'Content-Type: application/json' \
     --data '{"jsonrpc":"1.0","id":"x","method":"getblockchaininfo","params":[]}' \
     http://127.0.0.1:9292/
 ```
