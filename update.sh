@@ -79,7 +79,6 @@ fi
 echo_success "Set TERANODE_VERSION=$TARGET in .env (was $CURRENT)"
 
 echo ""
-echo_info "Next steps:"
-echo_info "  ./stop.sh             # if the stack is currently running"
-echo_info "  docker compose pull   # fetch the new image(s)"
-echo_info "  ./start.sh            # bring the stack back up on $TARGET"
+echo_info "Next: ./start.sh"
+echo_info "  (docker compose pulls the new image and recreates only the changed services;"
+echo_info "   running on top of an existing stack is fine — data volumes persist)"
