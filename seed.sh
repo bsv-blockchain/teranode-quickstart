@@ -50,12 +50,18 @@ NETWORK="${network:-testnet}"
 
 # Resolve source into an on-disk directory that will be bind-mounted into the seeder.
 if [ -z "$SOURCE" ]; then
-    SOURCE="${TERATESTNET_SNAPSHOT_BASE}/${HASH}.zip"
-    echo_warning "No source supplied — defaulting to the teratestnet snapshot URL."
-    echo_warning "This is the only canonical snapshot source published today. For"
-    echo_warning "mainnet / standard testnet, download or generate your own seed"
-    echo_warning "into a local directory and pass the directory path as arg 2."
-    echo_info "Derived URL: $SOURCE"
+    if [ "$NETWORK" = "teratestnet" ]; then
+        SOURCE="${TERATESTNET_SNAPSHOT_BASE}/${HASH}.zip"
+        echo_info "No source supplied for teratestnet — deriving canonical snapshot URL."
+        echo_info "Derived URL: $SOURCE"
+    else
+        echo_error "Missing seed source for $NETWORK."
+        echo_info "Only teratestnet has a canonical snapshot URL that can be derived from the hash."
+        echo_info "For mainnet / standard testnet, download or generate your own seed"
+        echo_info "into a local directory and pass that directory path as arg 2."
+        echo_info "Usage: ./seed.sh <block-hash> <url-or-local-dir>"
+        exit 2
+    fi
 fi
 
 if [[ "$SOURCE" =~ ^https?:// ]]; then

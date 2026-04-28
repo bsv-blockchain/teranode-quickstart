@@ -1,6 +1,6 @@
 #!/bin/bash
 # Interactive first-time setup for Teranode Quickstart.
-# Picks network + mode, gathers credentials, writes .env and settings_local.conf.
+# Picks network + mode, gathers credentials, and writes .env.
 
 set -eo pipefail
 
