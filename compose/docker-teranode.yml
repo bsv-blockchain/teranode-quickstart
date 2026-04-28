@@ -11,9 +11,6 @@ x-teranode-base:
     - ../.env
   environment:
     SETTINGS_CONTEXT: ${SETTINGS_CONTEXT:-docker.m}
-    USE_LOCAL_AEROSPIKE: "true"
-    USE_LOCAL_POSTGRES: "true"
-    USE_LOCAL_KAFKA: "true"
 
 services:
   blockchain:
@@ -21,6 +18,13 @@ services:
     container_name: blockchain
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-blockchain=1"]
+    environment:
+      # Only blockchain waits on the data layer; downstream Teranode services
+      # gate on `blockchain healthy` via depends_on, so by the time they start
+      # aerospike + postgres + kafka are already ready.
+      USE_LOCAL_AEROSPIKE: "true"
+      USE_LOCAL_POSTGRES: "true"
+      USE_LOCAL_KAFKA: "true"
     deploy:
       resources:
         limits:
