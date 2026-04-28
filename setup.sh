@@ -110,8 +110,12 @@ if [ "$MODE" = "full" ]; then
         ASSET_BASE_URL=$(prompt "Asset API public base URL (https://node.example.com)" "")
     done
     ASSET_PUBLIC_URL="${ASSET_BASE_URL%/}/api/v1"
+    echo_cyan "P2P advertise address — libp2p multiaddr format:"
+    echo "   /dns4/<hostname>/tcp/9905    (DNS, recommended)"
+    echo "   /ip4/<ip>/tcp/9905           (IPv4 literal)"
+    echo "   /ip6/<ip>/tcp/9905           (IPv6 literal)"
     while [ -z "$P2P_ADVERTISE_ADDR" ]; do
-        P2P_ADVERTISE_ADDR=$(prompt "P2P advertise addr (host:9905)" "")
+        P2P_ADVERTISE_ADDR=$(prompt "P2P advertise addr" "")
     done
     echo_info "Reachability will be probed automatically after start.sh."
     echo ""

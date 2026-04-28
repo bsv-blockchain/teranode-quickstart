@@ -42,10 +42,19 @@ check_p2p_addr() {
         echo_info "p2p_advertise_addresses not set; skipping P2P probe (listen-only mode)."
         return 0
     fi
-    local host="${p2p_advertise_addresses%:*}"
-    local port="${p2p_advertise_addresses##*:}"
-    if [ "$host" = "$port" ] || [ -z "$port" ]; then
-        echo_error "p2p_advertise_addresses must be host:port (got '$p2p_advertise_addresses')"
+    # Expect libp2p multiaddr: /dns4/<host>/tcp/<port>, /ip4/<ip>/tcp/<port>, /ip6/<ip>/tcp/<port>
+    local _ proto host transport port
+    IFS='/' read -r _ proto host transport port <<< "$p2p_advertise_addresses"
+    case "$proto" in
+        dns4|ip4|ip6) ;;
+        *)
+            echo_error "p2p_advertise_addresses must be a libp2p multiaddr (got '$p2p_advertise_addresses')"
+            echo_info "Examples: /dns4/host.example.com/tcp/9905 | /ip4/1.2.3.4/tcp/9905"
+            return 1
+            ;;
+    esac
+    if [ "$transport" != "tcp" ] || ! [[ "$port" =~ ^[0-9]+$ ]] || [ -z "$host" ]; then
+        echo_error "Malformed multiaddr: '$p2p_advertise_addresses'"
         return 1
     fi
     echo_info "Probing P2P TCP connect to $host:$port ..."
