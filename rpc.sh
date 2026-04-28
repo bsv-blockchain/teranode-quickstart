@@ -34,7 +34,11 @@ shift
 
 PARAMS=""
 for p in "$@"; do
-    if [[ "$p" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || [ "$p" = "true" ] || [ "$p" = "false" ] || [ "$p" = "null" ]; then
+    # Anything <=20 chars matching the simple number regex (or true/false/null)
+    # goes through unquoted. Longer values are always quoted, so 64-char hex
+    # hashes that happen to be all-digits don't get sent as JSON numbers and
+    # truncated.
+    if [ ${#p} -le 20 ] && { [[ "$p" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || [ "$p" = "true" ] || [ "$p" = "false" ] || [ "$p" = "null" ]; }; then
         PARAMS+="$p,"
     else
         escaped=$(printf '%s' "$p" | sed 's/\\/\\\\/g; s/"/\\"/g')
