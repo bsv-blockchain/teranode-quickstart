@@ -1,15 +1,24 @@
 #!/bin/bash
 # Cleanup. Destructive — warns unless --force.
-# Default: remove data volumes only. .env is preserved unless you ask.
-# Flags:
-#   (no flag)        Remove named volumes only (same as --data-only)
-#   --data-only      Remove named volumes only (keep .env)
-#   --config-only    Remove .env (keep volumes)
-#   --all            Remove everything (volumes + .env)
-#   --force          Skip confirmation prompts
-#   --quiet          Suppress progress output
 
 set -eo pipefail
+
+USAGE=$(cat <<'EOF'
+Usage: ./clean.sh [flags]
+
+Cleanup. Destructive — warns unless --force.
+Default: remove data volumes only. .env is preserved unless you ask.
+
+Flags:
+  (no flag)        Remove named volumes only (same as --data-only)
+  --data-only      Remove named volumes only (keep .env)
+  --config-only    Remove .env (keep volumes)
+  --all            Remove everything (volumes + .env)
+  --force          Skip confirmation prompts
+  --quiet          Suppress progress output
+  -h, --help       Show this help and exit
+EOF
+)
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
@@ -26,11 +35,8 @@ for arg in "$@"; do
         --all)         MODE="all" ;;
         --force)       FORCE=1 ;;
         --quiet)       QUIET=1 ;;
-        -h|--help)
-            sed -n '2,10p' "$0"
-            exit 0
-            ;;
-        *) echo "Unknown flag: $arg" >&2; exit 2 ;;
+        -h|--help)     echo "$USAGE"; exit 0 ;;
+        *)             echo "Unknown flag: $arg" >&2; echo "$USAGE" >&2; exit 2 ;;
     esac
 done
 

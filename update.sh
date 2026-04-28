@@ -1,13 +1,21 @@
 #!/bin/bash
-# Check GitHub for a newer Teranode release, bump TERANODE_VERSION in .env,
-# pull the new image, recreate affected services.
-#
-# Flags:
-#   --check         Dry-run: show current vs latest, exit without changing .env
-#   --to <tag>      Pin to a specific tag (downgrade or forward-pin)
-#   --yes           Non-interactive: accept the prompt
+# Check GitHub for a newer Teranode release, bump TERANODE_VERSION in .env.
 
 set -eo pipefail
+
+USAGE=$(cat <<'EOF'
+Usage: ./update.sh [flags]
+
+Check GitHub for a newer Teranode release, bump TERANODE_VERSION in .env,
+print next steps. (Use ./start.sh afterwards to pull and recreate services.)
+
+Flags:
+  --check         Dry-run: show current vs latest, exit without changing .env
+  --to <tag>      Pin to a specific tag (downgrade or forward-pin)
+  --yes           Non-interactive: accept the prompt
+  -h, --help      Show this help and exit
+EOF
+)
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
@@ -26,11 +34,11 @@ PIN_TAG=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --check) CHECK=1 ;;
-        --to)    PIN_TAG="$2"; shift ;;
-        --yes)   AUTO_YES=1 ;;
-        -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
-        *) echo_error "Unknown flag: $1"; exit 2 ;;
+        --check)   CHECK=1 ;;
+        --to)      PIN_TAG="$2"; shift ;;
+        --yes)     AUTO_YES=1 ;;
+        -h|--help) echo "$USAGE"; exit 0 ;;
+        *)         echo_error "Unknown flag: $1"; echo "$USAGE" >&2; exit 2 ;;
     esac
     shift
 done
