@@ -164,10 +164,12 @@ echo ""
 confirm=$(prompt "Write .env? (Y/n)" "Y")
 [[ "$confirm" =~ ^[Nn] ]] && { echo_warning "Aborted — nothing written."; exit 0; }
 
-if [ ! -f "$ENV_FILE" ]; then
-    cp "$ENV_EXAMPLE" "$ENV_FILE"
-    echo_info "Created .env from .env.example"
+if [ -f "$ENV_FILE" ]; then
+    cp "$ENV_FILE" "${ENV_FILE}.bak"
+    echo_info "Backed up existing .env to .env.bak"
 fi
+cp "$ENV_EXAMPLE" "$ENV_FILE"
+echo_info "Wrote fresh .env from .env.example"
 
 case "$NETWORK" in
     mainnet)     MIN_FEE="0.00000100"; BLOCK_MAX="4294967296"; EXCESSIVE="10737418240" ;;
