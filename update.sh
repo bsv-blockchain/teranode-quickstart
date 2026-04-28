@@ -76,18 +76,10 @@ if [ "$AUTO_YES" -ne 1 ]; then
 fi
 
 "${REPO_ROOT}/lib/env_writer.sh" .env TERANODE_VERSION "$TARGET"
-echo_success "Set TERANODE_VERSION=$TARGET in .env"
-
-NETWORK="${TERANODE_NETWORK:-testnet}"
-NETWORK_ENV_FILE="${REPO_ROOT}/compose/networks/${NETWORK}.env"
-
-echo_info "Pulling new image(s)..."
-docker compose --env-file .env --env-file "$NETWORK_ENV_FILE" pull
-
-echo_info "Recreating Teranode services..."
-docker compose --env-file .env --env-file "$NETWORK_ENV_FILE" up -d
+echo_success "Set TERANODE_VERSION=$TARGET in .env (was $CURRENT)"
 
 echo ""
-"${REPO_ROOT}/lib/fsm.sh" up || echo_warning "FSM transition deferred."
-
-echo_success "Update complete: $CURRENT → $TARGET"
+echo_info "Next steps:"
+echo_info "  ./stop.sh             # if the stack is currently running"
+echo_info "  docker compose pull   # fetch the new image(s)"
+echo_info "  ./start.sh            # bring the stack back up on $TARGET"
