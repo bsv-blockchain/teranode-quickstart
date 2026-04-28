@@ -1,6 +1,24 @@
 # Teranode Quickstart
 
-A Docker-based one-command setup for running a [Teranode](https://github.com/bsv-blockchain/teranode) full node on mainnet, testnet, or regtest.
+A Docker-based one-command setup for running a [Teranode](https://github.com/bsv-blockchain/teranode) full node on mainnet, testnet, regtest, or teratestnet.
+
+---
+
+## Quick start
+
+```bash
+git clone https://github.com/bsv-blockchain/teranode-quickstart.git
+cd teranode-quickstart
+./setup.sh       # interactive: pick network + mode, generate .env
+./start.sh       # docker compose up with the right profiles
+./status.sh      # verify everything healthy
+./rpc.sh getblockcount    # chain queries via JSON-RPC
+./cli.sh getfsmstate      # teranode-cli for FSM / seeder / etc.
+```
+
+To stop: `./stop.sh`. To tail logs: `./logs.sh blockchain`. To upgrade Teranode: `./update.sh`.
+
+Read [docs/NETWORKS.md](docs/NETWORKS.md) before deciding which network to run.
 
 ---
 
@@ -82,22 +100,6 @@ By default, Teranode prunes spent outputs from the UTXO store **after 288 blocks
 If you need the full historical block data (indexers, explorers, chain analysis), enable the optional **blockpersister** service by adding `blockpersister` to `COMPOSE_PROFILES` in `.env` (e.g. `COMPOSE_PROFILES=legacy,p2p,blockpersister`). It writes raw block data to disk and runs in parallel with the pruner — pruning behaviour is unchanged, you just gain a durable archive.
 
 Archival mode costs significant disk space (grows with chain size — budget multiple TB on mainnet). Most operators should leave `blockpersister` out of `COMPOSE_PROFILES` and rely on the default 288-block pruning window.
-
----
-
-## Quick start
-
-```bash
-git clone https://github.com/bsv-blockchain/teranode-quickstart.git
-cd teranode-quickstart
-./setup.sh       # interactive: pick network + mode, generate .env + settings
-./start.sh       # docker compose up with the right profiles
-./status.sh      # verify everything healthy
-./rpc.sh getblockcount    # chain queries via JSON-RPC
-./cli.sh getfsmstate      # teranode-cli for FSM / seeder / etc.
-```
-
-To stop: `./stop.sh`. To tail logs: `./logs.sh blockchain`. To upgrade Teranode: `./update.sh`.
 
 ---
 
