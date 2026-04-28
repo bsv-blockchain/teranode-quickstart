@@ -13,7 +13,7 @@ Running `./setup.sh && ./start.sh` stands up:
 | Teranode microservices  | blockchain, asset, propagation, rpc, etc.      | various (see below)  |
 | PostgreSQL 17           | Blockchain state & indexes                     | 127.0.0.1:5432       |
 | Redpanda (Kafka)        | Inter-service event streaming                  | 127.0.0.1:9092       |
-| Aerospike 8.1           | UTXO store. EE (eval, 1 TB) default; CE (640 GB) via `AEROSPIKE_SERVICE` | 127.0.0.1:3000       |
+| Aerospike 8.1 (CE)      | UTXO store (640 GB cap)                        | 127.0.0.1:3000       |
 | Prometheus              | Metrics                                        | 127.0.0.1:9090       |
 | Grafana                 | Dashboards (Teranode + Aerospike)              | http://localhost:3005 |
 | Kafka Console           | Topic viewer with protobuf decoding            | http://localhost:8080 |
@@ -49,9 +49,14 @@ SSD storage is strongly recommended everywhere — HDDs will bottleneck Aerospik
 
 `./lib/check_requirements.sh` verifies these before setup.
 
-### Aerospike edition
+### Aerospike
 
-The default is Enterprise Edition (EE) in evaluation mode — 1 TB UTXO capacity, license expires after 30 days. Switch to Community Edition by setting `AEROSPIKE_SERVICE=aerospike` in `.env`; CE is capped at **640 GB** which is below the current **mainnet UTXO size**, so CE is only viable on testnet / teratestnet / regtest. For long-running mainnet nodes, plan for either an EE license renewal or a hosted Aerospike alternative.
+Quickstart ships **Community Edition only** with a single 640 GB UTXO file. Mainnet UTXO is currently around 500 GB, so there's ~140 GB of headroom — enough for now but not unlimited. If you need more capacity:
+
+- Add a second Aerospike instance (Aerospike supports horizontal partitioning via additional namespaces / nodes), or
+- Switch to Aerospike Enterprise Edition (paid license + multi-TB UTXO).
+
+Either path requires editing `compose/docker-services.yml` and the Aerospike config; this quickstart isn't opinionated about which to choose. Most operators won't need to touch this for some time.
 
 ## Seeding
 
@@ -105,7 +110,7 @@ Two zones live in `.env`:
 **Quickstart-orchestration vars** (UPPERCASE) — only the quickstart scripts read these:
 - `TERANODE_VERSION` — image tag, bumped by `./update.sh`
 - `HOST_IP` — bind address for externally-exposed ports
-- `AEROSPIKE_SERVICE`, `GOGC`, `SETTINGS_CONTEXT`
+- `GOGC`, `SETTINGS_CONTEXT`
 - `COMPOSE_PROFILES` — comma-separated list of optional services to run (`full`, `archival`). Read directly by `docker compose`, so bare `docker compose up -d` honours it
 - `POSTGRES_PASSWORD`
 - `SEED_HASH`, `SEED_URL`, `SEED_DIR`
@@ -214,7 +219,7 @@ teranode-quickstart/
 │   ├── docker-teranode.yml        # Teranode microservice definitions
 │   └── docker-services.yml        # postgres, kafka, aerospike, monitoring, asset-cache
 ├── config/
-│   ├── aerospike.conf / aerospike-ee.conf / aerospike-asmt-wrapper.sh
+│   ├── aerospike.conf
 │   ├── prometheus.yml / grafana_datasource.yaml / grafana_dashboards/
 │   ├── kafka-console-config.yml / protos/
 │   ├── asset-cache-nginx.conf
@@ -251,7 +256,7 @@ For remote RPC access: put an authenticated reverse proxy in front of 9292 on an
 
 - **`docker compose` fails with "services.blockchain refers to undefined volume teranode-data"** — you ran `docker compose` without this repo's root `docker-compose.yml`. Make sure you're in the repo root when invoking `start.sh`.
 - **FSM stuck in `INIT`** — `./cli.sh setfsmstate --fsmstate RUNNING` manually. `start.sh` tries this after health checks but it can race.
-- **Aerospike fails with "memory limit"** — you're on Community Edition with a large UTXO set. Switch to `AEROSPIKE_SERVICE=aerospike-ee` in `.env`.
+- **Aerospike fails with "device full" / "out of space"** — UTXO has outgrown the 640 GB CE cap. See the Aerospike subsection in Prerequisites for capacity-expansion options.
 - **Grafana shows "No data"** — Prometheus needs ~1 minute to scrape the first datapoints. If still empty, check `http://localhost:9090/targets`.
 - **Port X already in use** — another process holds the port. `lsof -i :X` to find it. Edit `HOST_IP` or remap in `docker-compose.yml`.
 - **Mainnet sync stuck** — mainnet Teranode is still maturing. Expect rough edges. Check the [upstream release notes](https://github.com/bsv-blockchain/teranode/releases).

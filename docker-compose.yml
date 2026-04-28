@@ -7,7 +7,6 @@ volumes:
   postgres-data:
   aerospike-data:
   aerospike-smd:
-  aerospike-asmt:
   teranode-data:
   prometheus-data:
   grafana-data:
@@ -99,7 +98,7 @@ services:
   aerospike:
     extends:
       file: ./compose/docker-services.yml
-      service: ${AEROSPIKE_SERVICE:-aerospike-ee}
+      service: aerospike
 
   aerospike-exporter:
     extends:

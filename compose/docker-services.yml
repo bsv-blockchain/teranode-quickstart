@@ -102,29 +102,6 @@ services:
     privileged: true
     hostname: aerospike
 
-  aerospike-ee:
-    container_name: aerospike
-    image: aerospike/aerospike-server-enterprise:8.1
-    networks:
-      - teranode-network
-    ports:
-      - "127.0.0.1:3000:3000"
-    restart: unless-stopped
-    ulimits:
-      nofile:
-        soft: 32768
-        hard: 32768
-    stop_grace_period: 600s
-    volumes:
-      - ../config/aerospike-ee.conf:/etc/aerospike.conf
-      - ../config/aerospike-asmt-wrapper.sh:/aerospike-asmt-wrapper.sh:ro
-      - aerospike-data:/opt/aerospike/data
-      - aerospike-smd:/opt/aerospike/smd
-      - aerospike-asmt:/backup/indexes
-    entrypoint: ["/bin/bash", "/aerospike-asmt-wrapper.sh"]
-    privileged: true
-    hostname: aerospike
-
   aerospike-exporter:
     image: aerospike/aerospike-prometheus-exporter:1.24.0
     container_name: aerospike-exporter
