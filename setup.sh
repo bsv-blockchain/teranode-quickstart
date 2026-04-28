@@ -198,6 +198,7 @@ PROFILES="legacy,p2p"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" minminingtxfee           "$MIN_FEE"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" blockmaxsize             "$BLOCK_MAX"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" excessiveblocksize       "$EXCESSIVE"
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" POSTGRES_PASSWORD        "$(gen_secret)"
 
 echo ""
 echo_green "Setup complete."
