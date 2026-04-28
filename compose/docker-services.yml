@@ -84,7 +84,7 @@ services:
 
   aerospike:
     container_name: aerospike
-    image: aerospike/aerospike-server:8.1
+    image: aerospike/aerospike-server:8.1.2.0
     command: --config-file /etc/aerospike.conf
     networks:
       - teranode-network
