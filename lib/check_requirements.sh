@@ -47,13 +47,34 @@ check_disk_space() {
     esac
     echo_info "Network: $NETWORK — recommended free space: ${required_gb}GB"
 
-    local available_gb
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        available_gb=$(df -g / | awk 'NR==2 {print $4}')
+    local docker_root
+    docker_root=$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo /)
+    echo_info "Docker storage root: $docker_root"
+    echo_info "  All Teranode data (UTXO, blocks, postgres, kafka) lives under this path."
+    echo_info "  Move Docker's data root via Docker daemon settings if you want a different disk."
+
+    local available_gb measured
+    if [ -d "$docker_root" ]; then
+        # Linux: path is real on the host
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            available_gb=$(df -g "$docker_root" | awk 'NR==2 {print $4}')
+        else
+            available_gb=$(df -BG "$docker_root" | awk 'NR==2 {print $4}' | tr -d 'G')
+        fi
+        measured="$docker_root"
     else
-        available_gb=$(df -BG / | awk 'NR==2 {print $4}' | tr -d 'G')
+        # macOS Docker Desktop: docker_root is inside the VM, not on the host.
+        # Measure the VM disk by running df inside a one-shot container.
+        echo_info "Docker Desktop VM detected — pulling alpine to measure VM disk (one-time, ~3MB) ..."
+        available_gb=$(docker run --rm alpine df -BG / 2>/dev/null | awk 'NR==2 {gsub("G",""); print $4}')
+        measured="Docker VM"
     fi
-    echo_info "Available: ${available_gb}GB on /"
+
+    if [ -z "$available_gb" ]; then
+        echo_warning "Could not measure Docker storage. Skipping disk check."
+        return 0
+    fi
+    echo_info "Available: ${available_gb}GB on ${measured}"
 
     if [ "$available_gb" -lt "$required_gb" ]; then
         echo_warning "Less than recommended free space. Node may fill the disk during sync."
