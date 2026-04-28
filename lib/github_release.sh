@@ -1,7 +1,7 @@
 #!/bin/bash
 # GitHub release helpers for Teranode version tracking.
 
-set -e
+set -eo pipefail
 
 TERANODE_REPO="bsv-blockchain/teranode"
 GH_API="https://api.github.com/repos/${TERANODE_REPO}"

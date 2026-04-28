@@ -2,7 +2,7 @@
 # Interactive first-time setup for Teranode Quickstart.
 # Picks network + mode, gathers credentials, writes .env and settings_local.conf.
 
-set -e
+set -eo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"

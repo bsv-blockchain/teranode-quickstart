@@ -23,7 +23,7 @@
 # historical queries return less than a fully-synced node. For complete
 # transaction history, skip seeding and let the node sync from scratch.
 
-set -e
+set -eo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"

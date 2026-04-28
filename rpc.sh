@@ -10,7 +10,7 @@
 # Numeric / true / false / null args are sent unquoted; everything else is
 # sent as a JSON string. For anything more exotic, use curl directly.
 
-set -e
+set -eo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"

@@ -2,7 +2,7 @@
 # System requirements check for Teranode Quickstart.
 # Teranode is heavy: many services, ~16-32GB RAM, ~1TB disk depending on network.
 
-set -e
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/colors.sh"

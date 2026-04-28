@@ -4,7 +4,7 @@
 # this host. We run curl / nc inside a one-shot throwaway container on the
 # default bridge network so we never accidentally hit a loopback shortcut.
 
-set -e
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/colors.sh"

@@ -7,7 +7,7 @@
 #   --to <tag>      Pin to a specific tag (downgrade or forward-pin)
 #   --yes           Non-interactive: accept the prompt
 
-set -e
+set -eo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"

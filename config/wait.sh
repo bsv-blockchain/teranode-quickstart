@@ -1,7 +1,7 @@
 #!/bin/bash
 # wait-for-port.sh
 
-set -e
+set -eo pipefail
 
 host="$1"
 port="$2"

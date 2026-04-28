@@ -6,7 +6,7 @@
 # - Preserves comments and ordering.
 # Safe for repeated calls from update.sh / setup.sh.
 
-set -e
+set -eo pipefail
 
 FILE="$1"
 KEY="$2"

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Bring the Teranode stack up for the network configured in .env.
 
-set -e
+set -eo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Tail logs for one service or all. Usage: ./logs.sh [service]
 
-set -e
+set -eo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"

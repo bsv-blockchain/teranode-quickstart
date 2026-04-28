@@ -1,7 +1,7 @@
 #!/bin/bash
 # Teranode FSM helpers: drive the blockchain service from INIT -> RUNNING.
 
-set -e
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/colors.sh"

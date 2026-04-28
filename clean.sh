@@ -9,7 +9,7 @@
 #   --force          Skip confirmation prompts
 #   --quiet          Suppress progress output
 
-set -e
+set -eo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
