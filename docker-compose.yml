@@ -94,6 +94,8 @@ services:
     extends:
       file: ./compose/docker-services.yml
       service: kafka-console-shared
+    profiles:
+      - monitoring
 
   aerospike:
     extends:
@@ -104,16 +106,22 @@ services:
     extends:
       file: ./compose/docker-services.yml
       service: aerospike-exporter
+    profiles:
+      - monitoring
 
   prometheus:
     extends:
       file: ./compose/docker-services.yml
       service: prometheus
+    profiles:
+      - monitoring
 
   grafana:
     extends:
       file: ./compose/docker-services.yml
       service: grafana
+    profiles:
+      - monitoring
 
   seeder:
     extends:

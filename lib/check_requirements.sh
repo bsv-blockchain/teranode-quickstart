@@ -8,6 +8,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/colors.sh"
 
 NETWORK="${1:-testnet}"
+# Comma-separated active compose profiles. Lets the port check scope itself to
+# services that will actually start. If unset, fall back to .env, else assume
+# the lean default (legacy,p2p — no monitoring, no archival).
+PROFILES="${2:-}"
+if [ -z "$PROFILES" ] && [ -f "${SCRIPT_DIR}/../.env" ]; then
+    PROFILES=$(grep -E '^COMPOSE_PROFILES=' "${SCRIPT_DIR}/../.env" | tail -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+fi
+PROFILES="${PROFILES:-legacy,p2p}"
+
+profile_active() {
+    case ",${PROFILES}," in
+        *",$1,"*) return 0 ;;
+        *)        return 1 ;;
+    esac
+}
 
 check_docker() {
     echo_info "Checking Docker..."
@@ -143,8 +158,15 @@ check_cpu() {
 }
 
 check_ports() {
-    echo_info "Checking for port conflicts..."
-    local ports=(3000 3005 5432 8000 8080 8081 8084 8090 9090 9092 9292 9905)
+    echo_info "Checking for port conflicts (profiles: ${PROFILES})..."
+    # Core ports — bound by services that always run.
+    #   3000 aerospike, 5432 postgres, 8081 redpanda schema reg,
+    #   8084 propagation, 8090 asset, 9092 kafka, 9292 rpc
+    local ports=(3000 5432 8081 8084 8090 9092 9292)
+    # Profile-gated ports — only included if the matching profile is active.
+    profile_active p2p            && ports+=(8000 9905)        # asset-cache, peer
+    profile_active monitoring     && ports+=(3005 8080 9090)   # grafana, kafka-console, prometheus
+
     local conflicts=()
     for port in "${ports[@]}"; do
         if lsof -i ":$port" 2>/dev/null | grep -q LISTEN; then
