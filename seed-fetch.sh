@@ -153,6 +153,10 @@ ensure_rclone || exit 1
 NETWORK_BASE="${SNAPSHOT_BASE}/${NETWORK}-teranode/"
 
 if [ -n "${SEED_HEIGHT:-}" ]; then
+    if ! [[ "$SEED_HEIGHT" =~ ^[0-9]+$ ]]; then
+        echo_error "SEED_HEIGHT must be a numeric block height (got: ${SEED_HEIGHT})."
+        exit 2
+    fi
     HEIGHT="$SEED_HEIGHT"
     echo_info "Using SEED_HEIGHT override: $HEIGHT"
     if ! snapshot_complete "${NETWORK_BASE}${HEIGHT}/"; then
