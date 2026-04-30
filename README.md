@@ -86,7 +86,17 @@ Initial sync is faster if you seed the UTXO set from an existing snapshot instea
   ```
   The script derives the URL:
   `https://svnode-snapshots.bsvb.tech/teratestnet/<hash>.zip`
-- **mainnet / standard testnet** — no canonical download URL exists. Download or generate the seed data yourself, put it in a local directory, then:
+- **mainnet / standard testnet** — BSVA hosts snapshots at
+  `https://svnode-snapshots.bsvb.tech/<network>-teranode/<height>/`. Use the
+  fetch helper, which auto-discovers the latest completed height (via the
+  `snapshot_date.txt` marker) and rsyncs the UTXO files into `seed-cache/`:
+  ```bash
+  ./seed-fetch.sh           # downloads latest for the network in .env
+  ./seed.sh <hash> <dir>    # next-step command is printed by seed-fetch.sh
+  ```
+  Or just run `./seed.sh` with no args — it'll prompt to fetch.
+  Prefer to build your own seed? Skip `seed-fetch.sh` and pass a local
+  directory directly:
   ```bash
   ./seed.sh <block-hash> /path/to/seed-dir
   ```
@@ -168,7 +178,8 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 | `./update.sh`    | Check GitHub for a newer Teranode release; bump `.env`; pull; restart. See below. |
 | `./cli.sh …`     | Run `teranode-cli` inside the blockchain container (FSM state, seeder, admin). Ex: `./cli.sh getfsmstate` |
 | `./rpc.sh …`     | Call JSON-RPC at localhost:9292 (chain queries, TX submission). Ex: `./rpc.sh getblockcount` |
-| `./seed.sh`      | Seed UTXO state. Args: `<block-hash> [url-or-local-dir]`. teratestnet auto-derives the URL; for mainnet / testnet bring your own — either a URL to a compatible snapshot ZIP or a local directory path already containing seed data. |
+| `./seed-fetch.sh`| Download the latest BSVA-hosted snapshot for mainnet / testnet (auto-discovers the newest completed height, rsyncs UTXO files into `seed-cache/`, verifies sha256). |
+| `./seed.sh`      | Seed UTXO state. Args: `<block-hash> [url-or-local-dir]`. teratestnet auto-derives the URL; for mainnet / testnet, run `./seed-fetch.sh` first, or pass a local directory containing your own seed data. With no args, prompts to fetch. |
 | `./status.sh`    | `docker compose ps` + FSM state + block count.              |
 | `./logs.sh [svc]`| Tail logs for a service or all services.                    |
 | `./clean.sh`     | Remove volumes / config. See flags with `./clean.sh --help`.|
