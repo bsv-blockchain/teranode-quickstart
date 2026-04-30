@@ -148,11 +148,11 @@ if docker exec seeder teranode-cli seeder -inputDir /seed -hash "$HASH"; then
     echo_success "Seeding completed."
 else
     echo_error "Seeding failed."
-    docker compose --profile seeding down
+    docker compose --profile seeding rm -fsv seeder
     exit 1
 fi
 
 echo_info "Stopping seeder ..."
-docker compose --profile seeding down
+docker compose --profile seeding rm -fsv seeder
 
 echo_success "Done. Run ./start.sh to bring the full stack up with the seeded data."
