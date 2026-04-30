@@ -67,7 +67,8 @@ if [ -z "$SOURCE" ]; then
             else
                 echo_info "Skipping BSVA fetch. Build your own seed data, then run:"
                 echo_info "  ./seed.sh <block-hash> <local-seed-dir>"
-                exit 0
+                # Non-zero so chained invocations like `./seed.sh && ./start.sh` don't continue.
+                exit 2
             fi
             ;;
     esac

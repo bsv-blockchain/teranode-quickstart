@@ -126,17 +126,26 @@ verify_sha256() {
     elif command -v shasum >/dev/null 2>&1; then
         sha_tool="shasum -a 256"
     else
-        echo_warning "No sha256 tool found — skipping checksum verification."
-        return 0
+        echo_error "No sha256 tool (sha256sum or shasum) found — cannot verify snapshot integrity."
+        return 1
     fi
-    (cd "$dir" && for f in *.sha256; do
-        [ -f "$f" ] || continue
-        echo_info "Verifying $(basename "$f" .sha256) ..."
-        if ! $sha_tool -c "$f" >/dev/null; then
-            echo_error "Checksum mismatch for $f"
-            return 1
+    (
+        cd "$dir" || exit 1
+        local found=0
+        for f in *.sha256; do
+            [ -f "$f" ] || continue
+            found=1
+            echo_info "Verifying $(basename "$f" .sha256) ..."
+            if ! $sha_tool -c "$f" >/dev/null; then
+                echo_error "Checksum mismatch for $f"
+                exit 1
+            fi
+        done
+        if [ "$found" -eq 0 ]; then
+            echo_error "No .sha256 files found in $dir — refusing to proceed without verification."
+            exit 1
         fi
-    done)
+    )
 }
 
 ensure_rclone || exit 1
@@ -189,14 +198,15 @@ fi
 echo_info "Verifying checksums ..."
 verify_sha256 "$SEED_DATA" || exit 1
 
-# Persist for seed.sh to pick up automatically.
+# Persist for seed.sh to pick up automatically. Use printf %q so values
+# with shell-special characters (spaces in REPO_ROOT, etc.) round-trip safely.
 mkdir -p "${REPO_ROOT}/seed-cache"
-cat >"${REPO_ROOT}/seed-cache/.last-fetch.env" <<EOF
-FETCHED_NETWORK=${NETWORK}
-FETCHED_HEIGHT=${HEIGHT}
-FETCHED_HASH=${HASH}
-FETCHED_DIR=${SEED_DATA}
-EOF
+{
+    printf 'FETCHED_NETWORK=%q\n' "$NETWORK"
+    printf 'FETCHED_HEIGHT=%q\n' "$HEIGHT"
+    printf 'FETCHED_HASH=%q\n' "$HASH"
+    printf 'FETCHED_DIR=%q\n' "$SEED_DATA"
+} >"${REPO_ROOT}/seed-cache/.last-fetch.env"
 
 echo ""
 echo_success "Snapshot ready at: ${SEED_DATA}"
