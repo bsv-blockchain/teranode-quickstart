@@ -86,7 +86,17 @@ Initial sync is faster if you seed the UTXO set from an existing snapshot instea
   ```
   The script derives the URL:
   `https://svnode-snapshots.bsvb.tech/teratestnet/<hash>.zip`
-- **mainnet / standard testnet** — no canonical download URL exists. Download or generate the seed data yourself, put it in a local directory, then:
+- **mainnet / standard testnet** — BSVA hosts snapshots at
+  `https://svnode-snapshots.bsvb.tech/<network>-teranode/<height>/`. Use the
+  fetch helper, which auto-discovers the latest completed height (via the
+  `snapshot_date.txt` marker) and rsyncs the UTXO files into `seed-cache/`:
+  ```bash
+  ./seed-fetch.sh           # downloads latest for the network in .env
+  ./seed.sh <hash> <dir>    # next-step command is printed by seed-fetch.sh
+  ```
+  Or just run `./seed.sh` with no args — it'll prompt to fetch.
+  Prefer to build your own seed? Skip `seed-fetch.sh` and pass a local
+  directory directly:
   ```bash
   ./seed.sh <block-hash> /path/to/seed-dir
   ```
@@ -168,7 +178,8 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 | `./update.sh`    | Check GitHub for a newer Teranode release; bump `.env`; pull; restart. See below. |
 | `./cli.sh …`     | Run `teranode-cli` inside the blockchain container (FSM state, seeder, admin). Ex: `./cli.sh getfsmstate` |
 | `./rpc.sh …`     | Call JSON-RPC at localhost:9292 (chain queries, TX submission). Ex: `./rpc.sh getblockcount` |
-| `./seed.sh`      | Seed UTXO state. Args: `<block-hash> [url-or-local-dir]`. teratestnet auto-derives the URL; for mainnet / testnet bring your own — either a URL to a compatible snapshot ZIP or a local directory path already containing seed data. |
+| `./seed-fetch.sh`| Download the latest BSVA-hosted snapshot for mainnet / testnet (auto-discovers the newest completed height, rsyncs UTXO files into `seed-cache/`, verifies sha256). |
+| `./seed.sh`      | Seed UTXO state. Args: `<block-hash> [url-or-local-dir]`. teratestnet auto-derives the URL; for mainnet / testnet, run `./seed-fetch.sh` first, or pass a local directory containing your own seed data. With no args, prompts to fetch. |
 | `./status.sh`    | `docker compose ps` + FSM state + block count.              |
 | `./logs.sh [svc]`| Tail logs for a service or all services.                    |
 | `./clean.sh`     | Remove volumes / config. See flags with `./clean.sh --help`.|
@@ -270,6 +281,49 @@ For anything that smells like a Teranode bug (not a quickstart bug): open an iss
 ## Disclaimer
 
 Teranode is under active development. Per-network caveats and recommended budgets live in [docs/NETWORKS.md](docs/NETWORKS.md) — read it before deciding to run on a particular network.
+
+This quickstart is provided as-is without warranty. Always verify configurations and test thoroughly before using in production environments. Ensure you understand the implications of running a Teranode instance, including disk space, bandwidth, and security considerations.
+
+### Snapshot trust and security considerations
+
+The UTXO snapshots available at https://svnode-snapshots.bsvb.tech/ are provided as-is by the BSV Association. While these snapshots can significantly speed up initial node setup, it's critical to understand the security implications before using them in different environments.
+
+#### Usage guidelines and best practices
+
+**Snapshots are suitable for:**
+- **Quick deployment** for businesses to get operational faster
+- **Development and testing environments**
+- **Non-mining passive nodes**
+- **Applications processing confirmed transactions**
+
+**Important considerations for production use:**
+- **0-confirmation transactions**: Do not rely on 0-confirmation transactions from snapshot-initialized nodes
+- **Dual-node strategy**: Use snapshots for immediate deployment while simultaneously running a full genesis sync on a separate node
+- **Network consensus**: Trust the network consensus mechanism — if invalid data exists in snapshots, the network will reject it
+
+#### How snapshots work with network consensus
+
+**Network protection**: The Bitcoin SV network's consensus mechanism ensures that any invalid transactions or outputs in snapshots will be rejected by the network. If your snapshot-initialized node encounters invalid data, it will either:
+- Reject the invalid data and continue following the valid chain
+- Temporarily halt until the issue is resolved through network consensus
+
+**Recommended deployment strategy:**
+- **Immediate operations**: Use snapshot sync for quick deployment to start operations
+- **Parallel validation**: Run a separate node with full genesis sync for maximum validation
+- **Migration path**: Once your genesis-synced node is ready, you can migrate operations or use it for additional validation
+
+#### Security considerations
+
+**Trust model**: Using snapshots requires trusting the snapshot provider has not included manipulated data, though the network's consensus mechanism provides protection against invalid data propagation.
+
+**0-confirmation risk**: Applications relying on 0-confirmation transactions should use genesis-synced nodes, as snapshot initialization bypasses the historical validation that helps detect certain attack vectors.
+
+**For enhanced security:**
+- Create and maintain your own snapshots from genesis-validated nodes
+- Monitor synchronization status and network consensus alignment
+- The `.sha256` companions next to every snapshot file are checked automatically by `./seed-fetch.sh` — keep this verification step in any custom workflow
+
+**Validation**: Teranode automatically validates loaded snapshot data on startup, verifying block headers, chain integrity, and the UTXO set. The network consensus mechanism provides ongoing protection against invalid data.
 
 ---
 
