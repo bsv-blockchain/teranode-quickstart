@@ -253,6 +253,9 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: ["sleep infinity"]
     volumes:
+      - ../config/wait.sh:/app/wait.sh
+      - ../config/entrypoint.sh:/app/entrypoint.sh
+      - teranode-data:/app/data
       - ${SEED_DATA_PATH:-./}:/seed:ro
     depends_on:
       - aerospike
