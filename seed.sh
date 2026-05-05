@@ -2,19 +2,13 @@
 # Seed Teranode from a UTXO snapshot.
 #
 # Usage:
-#   ./seed.sh <block-hash>                        # teratestnet: auto-derive URL + download
-#   ./seed.sh <block-hash> <http(s)-url>          # download from any URL
-#   ./seed.sh <block-hash> <local-seed-dir>       # use an existing local directory (BYO)
-#   ./seed.sh                                     # reads SEED_HASH + SEED_URL or SEED_DIR from .env
-#                                                 # mainnet/testnet: prompts to fetch BSVA-hosted snapshot
+#   ./seed.sh                                     # prompt to fetch BSVA-hosted snapshot
+#   ./seed.sh <block-hash> <local-seed-dir>      # use existing local seed data (BYO)
 #
-# Snapshot sources by network:
-#   - teratestnet:                  https://svnode-snapshots.bsvb.tech/teratestnet/<hash>.zip
-#                                   (./seed.sh <hash> derives this URL)
-#   - mainnet / standard testnet:   BSVA hosts snapshots at
-#                                   https://svnode-snapshots.bsvb.tech/<network>-teranode/<height>/
-#                                   Use ./seed-fetch.sh to download the latest, OR bring your
-#                                   own seed data and pass the directory as the second arg.
+# Snapshots: BSVA hosts at https://svnode-snapshots.bsvb.tech/<network>-teranode/<height>/
+# for mainnet, testnet, and teratestnet. ./seed-fetch.sh discovers the latest
+# completed height and downloads it. Prefer to build your own? Pass a local
+# directory containing the .utxo-headers + .utxo-set files instead.
 #
 # Requires:
 #   - Stack NOT running with existing state. Seeding populates Aerospike and
@@ -36,107 +30,61 @@ set -a
 [ -f .env ] && source .env
 set +a
 
-TERATESTNET_SNAPSHOT_BASE="https://svnode-snapshots.bsvb.tech/teratestnet"
-
-HASH="${1:-$SEED_HASH}"
-SOURCE="${2:-${SEED_URL:-${SEED_DIR:-}}}"
+HASH="${1:-}"
+SOURCE="${2:-}"
 
 NETWORK="${network:-testnet}"
 
-# Resolve source into an on-disk directory that will be bind-mounted into the seeder.
-# For mainnet/testnet without an explicit source, offer to fetch the BSVA-hosted snapshot.
-if [ -z "$SOURCE" ]; then
-    case "$NETWORK" in
-        mainnet|testnet)
-            echo_info "BSVA hosts ${NETWORK} snapshots at https://svnode-snapshots.bsvb.tech/${NETWORK}-teranode/"
-            echo_info "You can also build your own seed data and pass the directory to seed.sh."
-            read -p "$(echo_yellow "Fetch the latest BSVA-hosted snapshot now? [Y/n]: ")" reply
-            reply=${reply:-Y}
-            if [[ "$reply" =~ ^[Yy]$ ]]; then
-                "${REPO_ROOT}/seed-fetch.sh" || exit $?
-                # seed-fetch.sh writes the next-step env to seed-cache/.last-fetch.env
-                if [ -f "${REPO_ROOT}/seed-cache/.last-fetch.env" ]; then
-                    # shellcheck source=/dev/null
-                    source "${REPO_ROOT}/seed-cache/.last-fetch.env"
-                    HASH="$FETCHED_HASH"
-                    SOURCE="$FETCHED_DIR"
-                else
-                    echo_error "seed-fetch.sh did not produce expected state file."
-                    exit 1
-                fi
-            else
-                echo_info "Skipping BSVA fetch. Build your own seed data, then run:"
-                echo_info "  ./seed.sh <block-hash> <local-seed-dir>"
-                # Non-zero so chained invocations like `./seed.sh && ./start.sh` don't continue.
-                exit 2
-            fi
-            ;;
-    esac
-fi
+case "$NETWORK" in
+    mainnet|testnet|teratestnet) ;;
+    *)
+        echo_error "Seeding not supported for network: $NETWORK"
+        echo_info "Supported: mainnet | testnet | teratestnet"
+        exit 2
+        ;;
+esac
 
-if [ -z "$HASH" ]; then
-    echo_error "Missing block hash."
-    echo_info "Usage: ./seed.sh <block-hash> [url-or-local-dir]"
-    echo_info "Or set SEED_HASH (+ SEED_URL or SEED_DIR) in .env"
-    exit 2
-fi
-
-if [ -z "$SOURCE" ]; then
-    if [ "$NETWORK" = "teratestnet" ]; then
-        SOURCE="${TERATESTNET_SNAPSHOT_BASE}/${HASH}.zip"
-        echo_info "No source supplied for teratestnet — deriving canonical snapshot URL."
-        echo_info "Derived URL: $SOURCE"
+# No args → prompt to fetch BSVA-hosted snapshot for the configured network.
+if [ -z "$HASH" ] && [ -z "$SOURCE" ]; then
+    echo_info "BSVA hosts ${NETWORK} snapshots at https://svnode-snapshots.bsvb.tech/${NETWORK}-teranode/"
+    echo_info "You can also build your own seed data and pass the directory to seed.sh."
+    read -p "$(echo_yellow "Fetch the latest BSVA-hosted snapshot now? [Y/n]: ")" reply
+    reply=${reply:-Y}
+    if [[ "$reply" =~ ^[Yy]$ ]]; then
+        "${REPO_ROOT}/seed-fetch.sh" || exit $?
+        if [ ! -f "${REPO_ROOT}/seed-cache/.last-fetch.env" ]; then
+            echo_error "seed-fetch.sh did not produce expected state file."
+            exit 1
+        fi
+        # shellcheck source=/dev/null
+        source "${REPO_ROOT}/seed-cache/.last-fetch.env"
+        HASH="$FETCHED_HASH"
+        SOURCE="$FETCHED_DIR"
     else
-        echo_error "Missing seed source for $NETWORK."
-        echo_info "For mainnet/testnet, run ./seed-fetch.sh to download a BSVA-hosted snapshot,"
-        echo_info "or pass a local directory containing your own seed data."
-        echo_info "Usage: ./seed.sh <block-hash> <url-or-local-dir>"
+        echo_info "Skipping fetch. Build your own seed data, then run:"
+        echo_info "  ./seed.sh <block-hash> <local-seed-dir>"
+        # Non-zero so chained invocations like `./seed.sh && ./start.sh` don't continue.
         exit 2
     fi
 fi
 
-if [[ "$SOURCE" =~ ^https?:// ]]; then
-    # URL mode: download + extract into ./seed-data
-    if ! command -v unzip >/dev/null 2>&1; then
-        echo_error "unzip is required for URL mode. Install it and retry (or pass a local dir)."
-        exit 1
-    fi
-    SEED_CACHE="${REPO_ROOT}/seed-cache"
-    SEED_DATA="${REPO_ROOT}/seed-data"
-    ZIP_FILE="${SEED_CACHE}/${HASH}.zip"
-    mkdir -p "$SEED_CACHE"
-    if [ -f "$ZIP_FILE" ]; then
-        echo_info "Cached snapshot found at $ZIP_FILE"
-    else
-        echo_info "Downloading snapshot from $SOURCE ..."
-        if ! curl -L -o "$ZIP_FILE" "$SOURCE"; then
-            echo_error "Download failed."
-            rm -f "$ZIP_FILE"
-            exit 1
-        fi
-    fi
-    echo_info "Extracting to $SEED_DATA ..."
-    rm -rf "$SEED_DATA"
-    mkdir -p "$SEED_DATA"
-    if ! unzip -q "$ZIP_FILE" -d "$SEED_DATA"; then
-        echo_error "Unzip failed."
-        rm -rf "$SEED_DATA"
-        exit 1
-    fi
-    MOUNT_DIR="$SEED_DATA"
-else
-    # Local directory mode (BYO seed for mainnet / testnet etc.)
-    if [ ! -d "$SOURCE" ]; then
-        echo_error "Local seed directory does not exist: $SOURCE"
-        exit 1
-    fi
-    if [ -z "$(ls -A "$SOURCE" 2>/dev/null)" ]; then
-        echo_error "Local seed directory is empty: $SOURCE"
-        exit 1
-    fi
-    MOUNT_DIR="$(cd "$SOURCE" && pwd)"
-    echo_info "Using existing seed directory: $MOUNT_DIR"
+if [ -z "$HASH" ] || [ -z "$SOURCE" ]; then
+    echo_error "Both <block-hash> and <local-seed-dir> are required."
+    echo_info "Usage: ./seed.sh <block-hash> <local-seed-dir>"
+    echo_info "Or run ./seed.sh with no args to fetch a BSVA-hosted snapshot."
+    exit 2
 fi
+
+if [ ! -d "$SOURCE" ]; then
+    echo_error "Local seed directory does not exist: $SOURCE"
+    exit 1
+fi
+if [ -z "$(ls -A "$SOURCE" 2>/dev/null)" ]; then
+    echo_error "Local seed directory is empty: $SOURCE"
+    exit 1
+fi
+MOUNT_DIR="$(cd "$SOURCE" && pwd)"
+echo_info "Using seed directory: $MOUNT_DIR"
 
 echo_info "Starting seeder service + dependencies (aerospike, postgres, kafka) ..."
 SEED_DATA_PATH="$MOUNT_DIR" docker compose --profile seeding up -d seeder

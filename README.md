@@ -80,26 +80,24 @@ Either path requires editing `compose/docker-services.yml` and the Aerospike con
 
 Initial sync is faster if you seed the UTXO set from an existing snapshot instead of replaying the whole chain.
 
-- **teratestnet** — a canonical snapshot is published. Just supply a block hash:
-  ```bash
-  ./seed.sh 000000002ea94a515ad9fd40d710fd249fe8610acef7b74f459446812d565187
-  ```
-  The script derives the URL:
-  `https://svnode-snapshots.bsvb.tech/teratestnet/<hash>.zip`
-- **mainnet / standard testnet** — BSVA hosts snapshots at
-  `https://svnode-snapshots.bsvb.tech/<network>-teranode/<height>/`. Use the
-  fetch helper, which auto-discovers the latest completed height (via the
-  `snapshot_date.txt` marker) and rsyncs the UTXO files into `seed-cache/`:
-  ```bash
-  ./seed-fetch.sh           # downloads latest for the network in .env
-  ./seed.sh <hash> <dir>    # next-step command is printed by seed-fetch.sh
-  ```
-  Or just run `./seed.sh` with no args — it'll prompt to fetch.
-  Prefer to build your own seed? Skip `seed-fetch.sh` and pass a local
-  directory directly:
-  ```bash
-  ./seed.sh <block-hash> /path/to/seed-dir
-  ```
+BSVA hosts snapshots for **mainnet**, **testnet**, and **teratestnet** at
+`https://svnode-snapshots.bsvb.tech/<network>-teranode/<height>/`. `seed-fetch.sh`
+auto-discovers the latest completed height (via the `snapshot_date.txt` marker)
+and rsyncs the UTXO files into `seed-cache/`:
+
+```bash
+./seed-fetch.sh           # downloads latest for the network in .env
+./seed.sh <hash> <dir>    # next-step command is printed by seed-fetch.sh
+```
+
+Or just run `./seed.sh` with no args — it'll prompt to fetch.
+
+Prefer to build your own seed? Skip `seed-fetch.sh` and pass a local directory
+directly:
+
+```bash
+./seed.sh <block-hash> /path/to/seed-dir
+```
 
 Snapshots are typically pruned — spent UTXOs are not included. For full historical TX data, skip seeding and let the node sync from scratch.
 
@@ -125,7 +123,6 @@ Two zones live in `.env`:
 - `GOGC`, `SETTINGS_CONTEXT`
 - `COMPOSE_PROFILES` — comma-separated list of optional services to run (`legacy`, `p2p`, `blockpersister`, `seeding`). Read directly by `docker compose`, so bare `docker compose up -d` honours it
 - `POSTGRES_PASSWORD`
-- `SEED_HASH`, `SEED_URL`, `SEED_DIR`
 
 **Teranode settings** (lowercase / camelCase, matching upstream `settings.conf`) — passed straight into the Teranode containers via `env_file: .env`:
 - `network` — `mainnet`, `testnet`, `regtest`, or `teratestnet`
@@ -178,8 +175,8 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 | `./update.sh`    | Check GitHub for a newer Teranode release; bump `.env`; pull; restart. See below. |
 | `./cli.sh …`     | Run `teranode-cli` inside the blockchain container (FSM state, seeder, admin). Ex: `./cli.sh getfsmstate` |
 | `./rpc.sh …`     | Call JSON-RPC at localhost:9292 (chain queries, TX submission). Ex: `./rpc.sh getblockcount` |
-| `./seed-fetch.sh`| Download the latest BSVA-hosted snapshot for mainnet / testnet (auto-discovers the newest completed height, rsyncs UTXO files into `seed-cache/`, verifies sha256). |
-| `./seed.sh`      | Seed UTXO state. Args: `<block-hash> [url-or-local-dir]`. teratestnet auto-derives the URL; for mainnet / testnet, run `./seed-fetch.sh` first, or pass a local directory containing your own seed data. With no args, prompts to fetch. |
+| `./seed-fetch.sh`| Download the latest BSVA-hosted snapshot (auto-discovers the newest completed height, rsyncs UTXO files into `seed-cache/`, verifies sha256). Works for mainnet, testnet, and teratestnet. |
+| `./seed.sh`      | Seed UTXO state. Args: `<block-hash> <local-seed-dir>`. With no args, prompts to fetch a BSVA-hosted snapshot. |
 | `./status.sh`    | `docker compose ps` + FSM state + block count.              |
 | `./logs.sh [svc]`| Tail logs for a service or all services.                    |
 | `./clean.sh`     | Remove volumes / config. See flags with `./clean.sh --help`.|

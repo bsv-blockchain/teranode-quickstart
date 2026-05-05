@@ -32,9 +32,8 @@ Shared Teranode test network run by the BSV Association. A published UTXO snapsh
 - 32 GB RAM recommended, 100 GB SSD, 8+ cores.
 - Block sizes capped at 1 GiB so the shared network stays approachable.
 - No DNS seeder — bootstrap via `legacy_config_ConnectPeers=57.130.17.176:38333` (see `.env.example`).
-- Canonical snapshot:
-  `https://svnode-snapshots.bsvb.tech/teratestnet/000000002ea94a515ad9fd40d710fd249fe8610acef7b74f459446812d565187.zip`
-  Seed with: `./seed.sh 000000002ea94a515ad9fd40d710fd249fe8610acef7b74f459446812d565187`
+- BSVA hosts snapshots at `https://svnode-snapshots.bsvb.tech/teratestnet-teranode/<height>/`.
+  Seed with: `./seed.sh` (prompts to fetch the latest completed height).
 
 ## regtest
 

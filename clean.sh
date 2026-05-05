@@ -62,8 +62,35 @@ if [ "$FORCE" -eq 0 ]; then
 fi
 
 if [ "$MODE" = "all" ] || [ "$MODE" = "data" ]; then
-    log "docker compose down -v ..."
-    compose down -v 2>/dev/null || true
+    # Run `compose down` with all known profiles so services like `seeder`,
+    # `peer`, `legacy`, `monitoring`, `blockpersister`, `asset-cache` are
+    # included. Otherwise their containers leak and leave phantom endpoints
+    # in the project network, breaking the next `compose up` with
+    # "endpoint with name X already exists in network".
+    log "docker compose down -v (all profiles) ..."
+    COMPOSE_PROFILES="seeding,p2p,legacy,monitoring,blockpersister" \
+        compose down -v --remove-orphans 2>/dev/null || true
+
+    # Belt-and-suspenders: force-remove any container still labelled for
+    # this compose project (covers any profile we forgot to list).
+    log "Removing any leftover project containers ..."
+    leftover=$(docker ps -aq --filter "label=com.docker.compose.project=teranode-quickstart" 2>/dev/null || true)
+    if [ -n "$leftover" ]; then
+        echo "$leftover" | xargs docker rm -f 2>/dev/null || true
+    fi
+
+    # Force-remove the project network. Disconnect anything still attached
+    # so a phantom endpoint can't block removal.
+    NET="teranode-quickstart-network"
+    if docker network inspect "$NET" >/dev/null 2>&1; then
+        log "Cleaning stale network endpoints on $NET ..."
+        docker network inspect "$NET" -f '{{range .Containers}}{{.Name}}{{"\n"}}{{end}}' \
+            | while IFS= read -r ep; do
+                [ -z "$ep" ] && continue
+                docker network disconnect -f "$NET" "$ep" 2>/dev/null || true
+            done
+        docker network rm "$NET" 2>/dev/null || true
+    fi
 fi
 
 if [ "$MODE" = "all" ] || [ "$MODE" = "config" ]; then

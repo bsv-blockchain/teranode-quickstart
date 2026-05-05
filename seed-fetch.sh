@@ -1,5 +1,5 @@
 #!/bin/bash
-# Fetch the latest BSVA-hosted Teranode UTXO snapshot for mainnet or testnet.
+# Fetch the latest BSVA-hosted Teranode UTXO snapshot.
 #
 # Browses https://svnode-snapshots.bsvb.tech/<network>-teranode/, picks the
 # newest height directory whose snapshot_date.txt completion marker exists,
@@ -11,7 +11,7 @@
 #
 # Usage:
 #   ./seed-fetch.sh                 # uses `network` from .env
-#   ./seed-fetch.sh <network>       # mainnet | testnet
+#   ./seed-fetch.sh <network>       # mainnet | testnet | teratestnet
 #
 # Env overrides:
 #   SEED_HEIGHT=<n>                 # pin to a specific snapshot height
@@ -41,10 +41,9 @@ if [ -z "$NETWORK" ]; then
 fi
 
 case "$NETWORK" in
-    mainnet|testnet) ;;
+    mainnet|testnet|teratestnet) ;;
     *)
-        echo_error "BSVA hosts snapshots only for mainnet and testnet (got: $NETWORK)."
-        echo_info "For teratestnet, use ./seed.sh <hash> directly."
+        echo_error "BSVA hosts snapshots only for mainnet, testnet, and teratestnet (got: $NETWORK)."
         exit 2
         ;;
 esac
