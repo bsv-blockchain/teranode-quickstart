@@ -192,7 +192,7 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 ./update.sh --check          # dry-run: show current vs latest
 ./update.sh                  # interactive update
 ./update.sh --yes            # non-interactive (same as above + auto-confirm)
-./update.sh --to v0.14.2     # pin to a specific tag (rollback)
+./update.sh --to v0.14.5     # pin to a specific tag (rollback)
 ```
 
 The update flow:
