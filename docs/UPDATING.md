@@ -4,7 +4,7 @@
 ./update.sh --check          # dry-run: show current vs latest
 ./update.sh                  # interactive
 ./update.sh --yes            # non-interactive
-./update.sh --to v0.14.5     # pin / rollback
+./update.sh --to v0.14.6     # pin / rollback
 ```
 
 ## Flow
