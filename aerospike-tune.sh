@@ -48,7 +48,7 @@ asinfo_run() {
 
 asinfo_set() {
   local param=$1 value=$2
-  local cmd="${SET_CONFIG_PREFIX};storage-engine.${param}=${value}"
+  local cmd="${SET_CONFIG_PREFIX};${param}=${value}"
   printf '  set %-20s = %-10s ... ' "$param" "$value"
   local result
   if result=$(asinfo_run -v "$cmd" 2>&1); then
@@ -154,8 +154,60 @@ cmd_status() {
   printf "  %-26s %s µs\n"         "defrag-sleep (current)" "$sleep_us"
   printf "  %-26s %s  (lower bound; ignores per-wblock I/O)\n" "defrag drain estimate" "$(human_duration "$drain_sec")"
 }
-cmd_throttle() { echo "TODO: filled in Task 6"; }
-cmd_restore() { echo "TODO: filled in Task 6"; }
+# Print a (param, current, → target) table for the named mode.
+print_diff_table() {
+  local mode=$1 i param current target
+  printf '  %-20s %-12s    %-12s\n' "param" "current" "→ target"
+  printf '  %-20s %-12s    %-12s\n' "-----" "-------" "--------"
+  for i in "${!PARAMS[@]}"; do
+    param=${PARAMS[$i]}
+    if [[ "$mode" == "throttle" ]]; then
+      target=${THROTTLE_VALUES[$i]}
+    else
+      target=${STEADY_VALUES[$i]}
+    fi
+    current=$(asinfo_get_param "$param")
+    printf '  %-20s %-12s → %-12s\n' "$param" "$current" "$target"
+  done
+}
+
+# Apply the named mode's values and verify each via get-config.
+apply_values() {
+  local mode=$1 i param target failed=0
+  for i in "${!PARAMS[@]}"; do
+    param=${PARAMS[$i]}
+    if [[ "$mode" == "throttle" ]]; then
+      target=${THROTTLE_VALUES[$i]}
+    else
+      target=${STEADY_VALUES[$i]}
+    fi
+    asinfo_set "$param" "$target" || failed=1
+    verify_value "$param" "$target" || failed=1
+  done
+  return $failed
+}
+
+cmd_throttle() {
+  bold "Aerospike IBD throttle"; echo " — namespace ${NAMESPACE}"
+  echo
+  echo "Will apply (values are TEMPORARY — run 'restore-steady-state' after IBD):"
+  print_diff_table throttle
+  echo
+  confirm || { echo "Aborted."; exit 1; }
+  echo
+  apply_values throttle
+}
+
+cmd_restore() {
+  bold "Aerospike restore-steady-state"; echo " — namespace ${NAMESPACE}"
+  echo
+  echo "Will apply (values mirror config/aerospike.conf):"
+  print_diff_table restore
+  echo
+  confirm || { echo "Aborted."; exit 1; }
+  echo
+  apply_values restore
+}
 
 # ---- Main ----
 main() {
