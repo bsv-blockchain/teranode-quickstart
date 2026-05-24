@@ -126,10 +126,21 @@ See docs/specs/2026-05-24-aerospike-ibd-throttle.md for design and rationale.
 EOF
 }
 
-# Parse a single key out of a semicolon-separated asinfo response.
+# Parse a single bare key out of a semicolon-separated asinfo response.
 get_stat() {
   local blob=$1 key=$2
   echo "$blob" | tr ';' '\n' | awk -F= -v k="$key" '$1==k {print $2; exit}'
+}
+
+# Sum a per-file metric across every storage-engine.file[N].<key> entry.
+# Per-file metrics include free_wblocks, defrag_q, write_q, used_bytes, etc.
+get_file_sum() {
+  local blob=$1 key=$2
+  echo "$blob" | tr ';' '\n' \
+    | awk -F= -v k="$key" '
+        $1 ~ "^storage-engine\\.file\\[[0-9]+\\]\\." k "$" { sum += $2; found = 1 }
+        END { if (found) print sum }
+      '
 }
 
 human_bytes() {
@@ -159,15 +170,17 @@ stat_or_dash() {
 cmd_status() {
   bold "Aerospike namespace: ${NAMESPACE}"; echo
   echo "─────────────────────────────────────────────────"
-  local stats sleep_us used total pct defrag_q drain_sec free_wb
+  local stats sleep_us used total pct defrag_q drain_sec free_wb write_q
   stats=$(asinfo_run -v "namespace/${NAMESPACE}")
   sleep_us=$(asinfo_get_param "defrag-sleep")
   # AS 8.x uses data_* keys, not device_*.
   used=$(get_stat "$stats" data_used_bytes);   used=${used:-0}
   total=$(get_stat "$stats" data_total_bytes); total=${total:-0}
   pct=$(awk -v u="$used" -v t="$total" 'BEGIN{ if (t>0) printf "%.1f%%", 100*u/t; else print "?" }')
-  defrag_q=$(get_stat "$stats" defrag_q); defrag_q=${defrag_q:-0}
-  free_wb=$(get_stat "$stats" free_wblocks)
+  # Per-file metrics live under storage-engine.file[N].<key>; sum across files.
+  defrag_q=$(get_file_sum "$stats" defrag_q); defrag_q=${defrag_q:-0}
+  free_wb=$(get_file_sum "$stats" free_wblocks)
+  write_q=$(get_file_sum "$stats" write_q); write_q=${write_q:-0}
   drain_sec=$(awk -v s="$sleep_us" -v q="$defrag_q" 'BEGIN{ printf "%d", (s*q)/1000000 }')
 
   printf "  %-26s %s\n"            "stop_writes"            "$(stat_or_dash "$(get_stat "$stats" stop_writes)")"
@@ -175,7 +188,9 @@ cmd_status() {
   printf "  %-26s %s\n"            "client_write_error"     "$(stat_or_dash "$(get_stat "$stats" client_write_error)")"
   printf "  %-26s %s / %s (%s)\n"  "data usage"             "$(human_bytes "$used")" "$(human_bytes "$total")" "$pct"
   printf "  %-26s %s\n"            "data_avail_pct"         "$(stat_or_dash "$(get_stat "$stats" data_avail_pct)")"
+  printf "  %-26s %s\n"            "cache_read_pct"         "$(stat_or_dash "$(get_stat "$stats" cache_read_pct)")"
   printf "  %-26s %s\n"            "free_wblocks"           "$(stat_or_dash "$free_wb")"
+  printf "  %-26s %s\n"            "write_q"                "$write_q"
   printf "  %-26s %s\n"            "defrag_q"               "$defrag_q"
   printf "  %-26s %s µs\n"         "defrag-sleep (current)" "$sleep_us"
   printf "  %-26s %s  (lower bound; ignores per-wblock I/O)\n" "defrag drain estimate" "$(human_duration "$drain_sec")"
