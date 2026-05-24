@@ -99,7 +99,61 @@ confirm() {
 
 # ---- Subcommand stubs (filled in Tasks 5–7) ----
 cmd_help() { echo "TODO: filled in Task 7"; }
-cmd_status() { echo "TODO: filled in Task 5"; }
+
+# Parse a single key out of a semicolon-separated asinfo response.
+get_stat() {
+  local blob=$1 key=$2
+  echo "$blob" | tr ';' '\n' | awk -F= -v k="$key" '$1==k {print $2; exit}'
+}
+
+human_bytes() {
+  awk -v b="$1" 'BEGIN{
+    if (b == "" || b+0 == 0) { print "0 B"; exit }
+    split("B KiB MiB GiB TiB PiB", u);
+    i=1; while (b >= 1024 && i < 6) { b /= 1024; i++ }
+    printf "%.1f %s", b, u[i]
+  }'
+}
+
+human_duration() {
+  awk -v s="$1" 'BEGIN{
+    s = int(s);
+    h = int(s/3600); s %= 3600;
+    m = int(s/60);   s %= 60;
+    printf "%dh %dm %ds", h, m, s
+  }'
+}
+
+# Print a stat row, substituting "—" when the key is missing/empty.
+stat_or_dash() {
+  local v=$1
+  [[ -z "$v" ]] && echo "—" || echo "$v"
+}
+
+cmd_status() {
+  bold "Aerospike namespace: ${NAMESPACE}"; echo
+  echo "─────────────────────────────────────────────────"
+  local stats sleep_us used total pct defrag_q drain_sec free_wb
+  stats=$(asinfo_run -v "namespace/${NAMESPACE}")
+  sleep_us=$(asinfo_get_param "defrag-sleep")
+  # AS 8.x uses data_* keys, not device_*.
+  used=$(get_stat "$stats" data_used_bytes);   used=${used:-0}
+  total=$(get_stat "$stats" data_total_bytes); total=${total:-0}
+  pct=$(awk -v u="$used" -v t="$total" 'BEGIN{ if (t>0) printf "%.1f%%", 100*u/t; else print "?" }')
+  defrag_q=$(get_stat "$stats" defrag_q); defrag_q=${defrag_q:-0}
+  free_wb=$(get_stat "$stats" free_wblocks)
+  drain_sec=$(awk -v s="$sleep_us" -v q="$defrag_q" 'BEGIN{ printf "%d", (s*q)/1000000 }')
+
+  printf "  %-26s %s\n"            "stop_writes"            "$(stat_or_dash "$(get_stat "$stats" stop_writes)")"
+  printf "  %-26s %s\n"            "hwm_breached"           "$(stat_or_dash "$(get_stat "$stats" hwm_breached)")"
+  printf "  %-26s %s\n"            "client_write_error"     "$(stat_or_dash "$(get_stat "$stats" client_write_error)")"
+  printf "  %-26s %s / %s (%s)\n"  "data usage"             "$(human_bytes "$used")" "$(human_bytes "$total")" "$pct"
+  printf "  %-26s %s\n"            "data_avail_pct"         "$(stat_or_dash "$(get_stat "$stats" data_avail_pct)")"
+  printf "  %-26s %s\n"            "free_wblocks"           "$(stat_or_dash "$free_wb")"
+  printf "  %-26s %s\n"            "defrag_q"               "$defrag_q"
+  printf "  %-26s %s µs\n"         "defrag-sleep (current)" "$sleep_us"
+  printf "  %-26s %s  (lower bound; ignores per-wblock I/O)\n" "defrag drain estimate" "$(human_duration "$drain_sec")"
+}
 cmd_throttle() { echo "TODO: filled in Task 6"; }
 cmd_restore() { echo "TODO: filled in Task 6"; }
 
