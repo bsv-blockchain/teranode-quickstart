@@ -98,7 +98,33 @@ confirm() {
 }
 
 # ---- Subcommand stubs (filled in Tasks 5–7) ----
-cmd_help() { echo "TODO: filled in Task 7"; }
+cmd_help() {
+  cat <<'EOF'
+aerospike-tune.sh — live Aerospike tuning for Teranode IBD throughput
+
+USAGE
+  ./aerospike-tune.sh [GLOBAL_FLAGS] <command>
+
+COMMANDS
+  throttle-for-ibd        Apply IBD-throttle values (raises defrag-lwm-pct to 70,
+                          drops defrag-sleep to 0, doubles caches). Reversible.
+  restore-steady-state    Revert to values that mirror config/aerospike.conf.
+  status                  Show namespace stats + defrag drain estimate.
+  -h, --help              Show this help.
+
+GLOBAL FLAGS
+  -y, --yes               Skip the [y/N] confirmation prompt.
+  --ssh-host <name>       Run asinfo via 'ssh <name> docker exec aerospike asinfo ...'.
+
+EXAMPLES
+  ./aerospike-tune.sh status
+  ./aerospike-tune.sh throttle-for-ibd
+  ./aerospike-tune.sh restore-steady-state -y
+  ./aerospike-tune.sh --ssh-host bsva-ovh-teranode-eu-3 status
+
+See docs/specs/2026-05-24-aerospike-ibd-throttle.md for design and rationale.
+EOF
+}
 
 # Parse a single key out of a semicolon-separated asinfo response.
 get_stat() {
