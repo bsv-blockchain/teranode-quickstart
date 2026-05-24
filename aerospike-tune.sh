@@ -38,7 +38,9 @@ bold()  { printf '%s%s%s' "$C_BLD" "$*" "$C_OFF"; }
 # ---- asinfo plumbing ----
 asinfo_run() {
   if [[ -n "$SSH_HOST" ]]; then
-    ssh "$SSH_HOST" "docker exec ${CONTAINER} asinfo $*"
+    local escaped
+    printf -v escaped '%q ' "$@"
+    ssh "$SSH_HOST" "docker exec ${CONTAINER} asinfo ${escaped}"
   else
     docker exec "${CONTAINER}" asinfo "$@"
   fi
@@ -107,7 +109,9 @@ main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -y|--yes) ASSUME_YES=1; shift ;;
-      --ssh-host) SSH_HOST=$2; shift 2 ;;
+      --ssh-host)
+        [[ $# -ge 2 ]] || { red "Missing argument for --ssh-host"; echo; exit 2; }
+        SSH_HOST=$2; shift 2 ;;
       -h|--help) cmd_help; exit 0 ;;
       throttle-for-ibd|restore-steady-state|status) cmd=$1; shift ;;
       *) red "Unknown argument: $1"; echo; cmd_help; exit 2 ;;
