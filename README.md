@@ -193,9 +193,9 @@ companion `aerospike-tune.sh` to temporarily relax defrag throttling without res
 ./aerospike-tune.sh restore-default   # revert to config/aerospike.conf defaults
 ````
 
-Operates on the local `aerospike` container only. See
-[docs/specs/2026-05-24-aerospike-ibd-throttle.md](docs/specs/2026-05-24-aerospike-ibd-throttle.md)
-for design and AS docs references.
+Operates on the local `aerospike` container only. Run `./aerospike-tune.sh --help`
+for full usage; inline comments in `config/aerospike.conf` document the steady-state
+values and the catch-up tradeoffs.
 
 ---
 

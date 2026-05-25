@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # aerospike-tune.sh — live Aerospike tuning for Teranode IBD throughput.
-# See docs/specs/2026-05-24-aerospike-ibd-throttle.md for design and rationale.
+# Inline comments in config/aerospike.conf document the steady-state values and
+# the catch-up tradeoffs. Run with --help for usage.
 
 set -euo pipefail
 
@@ -114,7 +115,7 @@ EXAMPLES
   ./aerospike-tune.sh restore-default -y
 
 Operates on the local 'aerospike' docker container only.
-See docs/specs/2026-05-24-aerospike-ibd-throttle.md for design and rationale.
+Inline comments in config/aerospike.conf cover the why behind each value.
 EOF
 }
 
