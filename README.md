@@ -187,14 +187,13 @@ If Aerospike hits `stop_writes` during a large initial sync (mainnet IBD), use t
 companion `aerospike-tune.sh` to temporarily relax defrag throttling without restarting:
 
 ````bash
-./aerospike-tune.sh status                  # show namespace stats + defrag drain estimate
-./aerospike-tune.sh throttle-for-ibd        # apply IBD-throttle values (reversible)
-# ... wait for defrag_q to drain, available_pct to recover ...
-./aerospike-tune.sh restore-steady-state    # revert to config/aerospike.conf defaults
+./aerospike-tune.sh status            # show namespace stats + defrag drain estimate
+./aerospike-tune.sh catchup           # raise lwm + drop defrag-sleep so defrag catches up
+# ... wait for defrag_q to drain, data_avail_pct to recover ...
+./aerospike-tune.sh restore-default   # revert to config/aerospike.conf defaults
 ````
 
-Operates against the local `aerospike` container by default. Add `--ssh-host <name>`
-to run against a remote Docker host over SSH. See
+Operates on the local `aerospike` container only. See
 [docs/specs/2026-05-24-aerospike-ibd-throttle.md](docs/specs/2026-05-24-aerospike-ibd-throttle.md)
 for design and AS docs references.
 

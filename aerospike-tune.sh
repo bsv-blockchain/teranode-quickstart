@@ -7,19 +7,18 @@ set -euo pipefail
 # ---- Configuration ----
 CONTAINER="aerospike"
 NAMESPACE="utxo-store"
-SSH_HOST=""
 ASSUME_YES=0
 
-# Steady-state values — MUST MIRROR config/aerospike.conf. Keep in sync.
+# Default (steady-state) values — MUST MIRROR config/aerospike.conf. Keep in sync.
 PARAMS=(defrag-sleep defrag-lwm-pct max-write-cache post-write-cache)
-STEADY_VALUES=(1000 50 4096M 1024)
-# IBD-throttle values.
+DEFAULT_VALUES=(1000 50 4096M 1024)
+# Catch-up values applied when defrag is behind / available_pct is low.
 # defrag-lwm-pct is RAISED (not lowered) per AS guidance:
 #   https://aerospike.com/docs/database/manage/namespace/storage/defrag/
 #   "When defragmentation cannot keep pace with storage demand,
 #    operators should temporarily decrease defrag-sleep and increase
 #    defrag-lwm-pct."
-THROTTLE_VALUES=(0 70 8192M 2048)
+CATCHUP_VALUES=(0 70 8192M 2048)
 
 # Aerospike 8.x storage-engine sub-context uses dotted-path within the namespace context.
 SET_CONFIG_PREFIX="set-config:context=namespace;id=${NAMESPACE}"
@@ -37,13 +36,7 @@ bold()  { printf '%s%s%s' "$C_BLD" "$*" "$C_OFF"; }
 
 # ---- asinfo plumbing ----
 asinfo_run() {
-  if [[ -n "$SSH_HOST" ]]; then
-    local escaped
-    printf -v escaped '%q ' "$@"
-    ssh "$SSH_HOST" "docker exec ${CONTAINER} asinfo ${escaped}"
-  else
-    docker exec "${CONTAINER}" asinfo "$@"
-  fi
+  docker exec "${CONTAINER}" asinfo "$@"
 }
 
 asinfo_set() {
@@ -97,31 +90,30 @@ confirm() {
   [[ "$ans" =~ ^[yY]$ ]]
 }
 
-# ---- Subcommand stubs (filled in Tasks 5–7) ----
 cmd_help() {
   cat <<'EOF'
 aerospike-tune.sh — live Aerospike tuning for Teranode IBD throughput
 
 USAGE
-  ./aerospike-tune.sh [GLOBAL_FLAGS] <command>
+  ./aerospike-tune.sh [-y] <command>
 
 COMMANDS
-  throttle-for-ibd        Apply IBD-throttle values (raises defrag-lwm-pct to 70,
-                          drops defrag-sleep to 0, doubles caches). Reversible.
-  restore-steady-state    Revert to values that mirror config/aerospike.conf.
-  status                  Show namespace stats + defrag drain estimate.
-  -h, --help              Show this help.
+  catchup           Apply catch-up values when defrag is behind / available_pct
+                    is low (raises defrag-lwm-pct to 70, drops defrag-sleep to 0,
+                    doubles caches). Reversible.
+  restore-default   Revert to values that mirror config/aerospike.conf.
+  status            Show namespace stats + defrag drain estimate.
+  -h, --help        Show this help.
 
-GLOBAL FLAGS
-  -y, --yes               Skip the [y/N] confirmation prompt.
-  --ssh-host <name>       Run asinfo via 'ssh <name> docker exec aerospike asinfo ...'.
+FLAGS
+  -y, --yes         Skip the [y/N] confirmation prompt.
 
 EXAMPLES
   ./aerospike-tune.sh status
-  ./aerospike-tune.sh throttle-for-ibd
-  ./aerospike-tune.sh restore-steady-state -y
-  ./aerospike-tune.sh --ssh-host bsva-ovh-teranode-eu-3 status
+  ./aerospike-tune.sh catchup
+  ./aerospike-tune.sh restore-default -y
 
+Operates on the local 'aerospike' docker container only.
 See docs/specs/2026-05-24-aerospike-ibd-throttle.md for design and rationale.
 EOF
 }
@@ -195,6 +187,16 @@ cmd_status() {
   printf "  %-26s %s µs\n"         "defrag-sleep (current)" "$sleep_us"
   printf "  %-26s %s  (lower bound; ignores per-wblock I/O)\n" "defrag drain estimate" "$(human_duration "$drain_sec")"
 }
+# Look up the target value for a param under a given mode ("catchup" or "default").
+target_for_mode() {
+  local mode=$1 idx=$2
+  if [[ "$mode" == "catchup" ]]; then
+    echo "${CATCHUP_VALUES[$idx]}"
+  else
+    echo "${DEFAULT_VALUES[$idx]}"
+  fi
+}
+
 # Print a (param, current, → target) table for the named mode.
 print_diff_table() {
   local mode=$1 i param current target
@@ -202,11 +204,7 @@ print_diff_table() {
   printf '  %-20s %-12s    %-12s\n' "-----" "-------" "--------"
   for i in "${!PARAMS[@]}"; do
     param=${PARAMS[$i]}
-    if [[ "$mode" == "throttle" ]]; then
-      target=${THROTTLE_VALUES[$i]}
-    else
-      target=${STEADY_VALUES[$i]}
-    fi
+    target=$(target_for_mode "$mode" "$i")
     current=$(asinfo_get_param "$param")
     printf '  %-20s %-12s → %-12s\n' "$param" "$current" "$target"
   done
@@ -217,37 +215,33 @@ apply_values() {
   local mode=$1 i param target failed=0
   for i in "${!PARAMS[@]}"; do
     param=${PARAMS[$i]}
-    if [[ "$mode" == "throttle" ]]; then
-      target=${THROTTLE_VALUES[$i]}
-    else
-      target=${STEADY_VALUES[$i]}
-    fi
+    target=$(target_for_mode "$mode" "$i")
     asinfo_set "$param" "$target" || failed=1
     verify_value "$param" "$target" || failed=1
   done
   return $failed
 }
 
-cmd_throttle() {
-  bold "Aerospike IBD throttle"; echo " — namespace ${NAMESPACE}"
+cmd_catchup() {
+  bold "Aerospike catch-up"; echo " — namespace ${NAMESPACE}"
   echo
-  echo "Will apply (values are TEMPORARY — run 'restore-steady-state' after IBD):"
-  print_diff_table throttle
+  echo "Will apply (TEMPORARY — run 'restore-default' once defrag has caught up):"
+  print_diff_table catchup
   echo
   confirm || { echo "Aborted."; exit 1; }
   echo
-  apply_values throttle
+  apply_values catchup
 }
 
 cmd_restore() {
-  bold "Aerospike restore-steady-state"; echo " — namespace ${NAMESPACE}"
+  bold "Aerospike restore-default"; echo " — namespace ${NAMESPACE}"
   echo
   echo "Will apply (values mirror config/aerospike.conf):"
-  print_diff_table restore
+  print_diff_table default
   echo
   confirm || { echo "Aborted."; exit 1; }
   echo
-  apply_values restore
+  apply_values default
 }
 
 # ---- Main ----
@@ -256,17 +250,14 @@ main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -y|--yes) ASSUME_YES=1; shift ;;
-      --ssh-host)
-        [[ $# -ge 2 ]] || { red "Missing argument for --ssh-host"; echo; exit 2; }
-        SSH_HOST=$2; shift 2 ;;
       -h|--help) cmd_help; exit 0 ;;
-      throttle-for-ibd|restore-steady-state|status) cmd=$1; shift ;;
+      catchup|restore-default|status) cmd=$1; shift ;;
       *) red "Unknown argument: $1"; echo; cmd_help; exit 2 ;;
     esac
   done
   case "$cmd" in
-    throttle-for-ibd) cmd_throttle ;;
-    restore-steady-state) cmd_restore ;;
+    catchup) cmd_catchup ;;
+    restore-default) cmd_restore ;;
     status) cmd_status ;;
     "") cmd_help; exit 2 ;;
   esac
