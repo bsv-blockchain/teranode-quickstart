@@ -11,7 +11,7 @@ ASSUME_YES=0
 
 # Default (steady-state) values — MUST MIRROR config/aerospike.conf. Keep in sync.
 PARAMS=(defrag-sleep defrag-lwm-pct max-write-cache post-write-cache)
-DEFAULT_VALUES=(1000 50 4096M 1024)
+DEFAULT_VALUES=(1000 50 2048M 1024)
 # Catch-up values applied when defrag is behind / available_pct is low.
 # defrag-lwm-pct is RAISED (not lowered) per AS guidance:
 #   https://aerospike.com/docs/database/manage/namespace/storage/defrag/
