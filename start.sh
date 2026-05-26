@@ -18,6 +18,20 @@ set -a
 source .env
 set +a
 
+case ",${COMPOSE_PROFILES:-}," in
+    *,blockpersister,*) HAS_PERSISTER=1 ;;
+    *)                  HAS_PERSISTER=0 ;;
+esac
+TRIGGER="${pruner_block_trigger:-}"
+TRIGGER="${TRIGGER//[[:space:]]/}"
+if [ "$HAS_PERSISTER" -eq 0 ] && [ "$TRIGGER" != "OnBlockMined" ]; then
+    echo_warning "pruner_block_trigger=${TRIGGER:-<unset, upstream default OnBlockPersisted>} but blockpersister is NOT in COMPOSE_PROFILES."
+    echo_warning "Pruner will idle and spent UTXOs will accumulate. Fix: set pruner_block_trigger=OnBlockMined in .env (or re-run ./setup.sh)."
+elif [ "$HAS_PERSISTER" -eq 1 ] && [ "$TRIGGER" = "OnBlockMined" ]; then
+    echo_warning "pruner_block_trigger=OnBlockMined but blockpersister IS in COMPOSE_PROFILES."
+    echo_warning "Pruner will not wait for archival. Consider pruner_block_trigger=OnBlockPersisted for coordinated pruning (or re-run ./setup.sh)."
+fi
+
 NETWORK="${network:?network not set in .env}"
 
 echo_info "Network: $NETWORK"
