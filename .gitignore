@@ -19,3 +19,4 @@ seed-data/
 
 # Claude Code dev context
 .claude/
+docs/superpowers/

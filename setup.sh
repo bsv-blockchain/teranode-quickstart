@@ -220,6 +220,12 @@ esac
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" minminingtxfee           "$MIN_FEE"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" blockmaxsize             "$BLOCK_MAX"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" excessiveblocksize       "$EXCESSIVE"
+if [ "$ARCHIVAL" = "true" ]; then
+    PRUNER_TRIGGER="OnBlockPersisted"
+else
+    PRUNER_TRIGGER="OnBlockMined"
+fi
+"${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" pruner_block_trigger     "$PRUNER_TRIGGER"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" POSTGRES_PASSWORD        "$(gen_secret)"
 
 echo ""

@@ -109,6 +109,8 @@ If you need the full historical block data (indexers, explorers, chain analysis)
 
 Archival mode costs significant disk space (grows with chain size — budget multiple TB on mainnet). Most operators should leave `blockpersister` out of `COMPOSE_PROFILES` and rely on the default 288-block pruning window.
 
+> **Upgrading from an earlier quickstart:** `pruner_block_trigger` is a new key in `.env`. If your `.env` predates this version, either re-run `./setup.sh` (it picks the right value from your archival choice) or add `pruner_block_trigger=OnBlockMined` to `.env` directly (assuming `COMPOSE_PROFILES` does not include `blockpersister`). `./start.sh` warns on mismatch.
+
 ---
 
 ## How it's wired
