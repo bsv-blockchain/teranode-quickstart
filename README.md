@@ -181,6 +181,22 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 | `./logs.sh [svc]`| Tail logs for a service or all services.                    |
 | `./clean.sh`     | Remove volumes / config. See flags with `./clean.sh --help`.|
 
+### Aerospike IBD tuning
+
+If Aerospike hits `stop_writes` during a large initial sync (mainnet IBD), use the
+companion `aerospike-tune.sh` to temporarily relax defrag throttling without restarting:
+
+````bash
+./aerospike-tune.sh status            # show namespace stats + defrag drain estimate
+./aerospike-tune.sh catchup           # raise lwm + drop defrag-sleep so defrag catches up
+# ... wait for defrag_q to drain, data_avail_pct to recover ...
+./aerospike-tune.sh restore-default   # revert to config/aerospike.conf defaults
+````
+
+Operates on the local `aerospike` container only. Run `./aerospike-tune.sh --help`
+for full usage; inline comments in `config/aerospike.conf` document the steady-state
+values and the catch-up tradeoffs.
+
 ---
 
 ## Updating
