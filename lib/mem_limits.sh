@@ -57,7 +57,8 @@ detect_total_ram_gb() {
     if [[ "$OSTYPE" == "darwin"* ]]; then
         echo $(( $(sysctl -n hw.memsize) / 1024 / 1024 / 1024 ))
     else
-        free -g | awk 'NR==2 {print $2}'
+        # free -g truncates (31.7 GB -> 31); compute from MB and round.
+        free -m | awk 'NR==2 {print int(($2 + 512) / 1024)}'
     fi
 }
 
@@ -81,8 +82,9 @@ compute_mem_limits() {
         if [ "$limit_mb" -lt "$MEM_LIMIT_FLOOR_MB" ]; then
             limit_mb=$MEM_LIMIT_FLOOR_MB
         fi
-        # Whole gigs read better in .env; fall back to MB below 2g.
-        if [ $(( limit_mb % 1024 )) -eq 0 ] || [ "$limit_mb" -ge 2048 ]; then
+        # Whole gigs read better in .env; anything fractional stays in MB so
+        # the formatted value never truncates below the computed cap.
+        if [ $(( limit_mb % 1024 )) -eq 0 ]; then
             echo "MEM_LIMIT_$(echo "$service" | tr '[:lower:]' '[:upper:]')=$(( limit_mb / 1024 ))g"
         else
             echo "MEM_LIMIT_$(echo "$service" | tr '[:lower:]' '[:upper:]')=${limit_mb}m"
