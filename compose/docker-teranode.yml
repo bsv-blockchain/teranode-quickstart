@@ -12,10 +12,16 @@ x-teranode-base:
   environment:
     SETTINGS_CONTEXT: ${SETTINGS_CONTEXT:-docker.m}
 
+# Per-service MEM_LIMIT_* caps (written by setup.sh, see lib/mem_limits.sh).
+# Teranode derives GOMEMLIMIT from the cgroup limit, so a capped service GCs
+# instead of ballooning — and a runaway service OOM-restarts instead of
+# starving Aerospike/Postgres on the host. 0 / unset = unlimited.
+
 services:
   blockchain:
     <<: *teranode-base
     container_name: blockchain
+    mem_limit: ${MEM_LIMIT_BLOCKCHAIN:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-blockchain=1"]
     environment:
@@ -36,6 +42,7 @@ services:
   asset:
     <<: *teranode-base
     container_name: asset
+    mem_limit: ${MEM_LIMIT_ASSET:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-asset=1"]
     ports:
@@ -54,6 +61,7 @@ services:
   legacy:
     <<: *teranode-base
     container_name: legacy
+    mem_limit: ${MEM_LIMIT_LEGACY:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-legacy=1"]
     depends_on:
@@ -70,6 +78,7 @@ services:
   subtreevalidation:
     <<: *teranode-base
     container_name: subtreevalidation
+    mem_limit: ${MEM_LIMIT_SUBTREEVALIDATION:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-subtreevalidation=1"]
     depends_on:
@@ -86,6 +95,7 @@ services:
   blockvalidation:
     <<: *teranode-base
     container_name: blockvalidation
+    mem_limit: ${MEM_LIMIT_BLOCKVALIDATION:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-blockvalidation=1"]
     depends_on:
@@ -102,6 +112,7 @@ services:
   blockassembly:
     <<: *teranode-base
     container_name: blockassembly
+    mem_limit: ${MEM_LIMIT_BLOCKASSEMBLY:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-blockassembly=1"]
     depends_on:
@@ -118,6 +129,7 @@ services:
   propagation:
     <<: *teranode-base
     container_name: propagation
+    mem_limit: ${MEM_LIMIT_PROPAGATION:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-propagation=1"]
     ports:
@@ -140,6 +152,7 @@ services:
   peer:
     <<: *teranode-base
     container_name: peer
+    mem_limit: ${MEM_LIMIT_PEER:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-p2p=1"]
     ports:
@@ -158,6 +171,7 @@ services:
   rpc:
     <<: *teranode-base
     container_name: rpc
+    mem_limit: ${MEM_LIMIT_RPC:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-rpc=1"]
     ports:
@@ -176,6 +190,7 @@ services:
   pruner:
     <<: *teranode-base
     container_name: pruner
+    mem_limit: ${MEM_LIMIT_PRUNER:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-pruner=1"]
     depends_on:
@@ -192,6 +207,7 @@ services:
   blockpersister:
     <<: *teranode-base
     container_name: blockpersister
+    mem_limit: ${MEM_LIMIT_BLOCKPERSISTER:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-blockpersister=1"]
     depends_on:
@@ -214,6 +230,7 @@ services:
   seeder:
     <<: *teranode-base
     container_name: seeder
+    mem_limit: ${MEM_LIMIT_SEEDER:-0}
     entrypoint: ["/bin/sh", "-c"]
     command: ["sleep infinity"]
     volumes:

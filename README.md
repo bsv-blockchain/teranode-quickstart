@@ -122,7 +122,8 @@ Two zones live in `.env`:
 **Quickstart-orchestration vars** (UPPERCASE) — only the quickstart scripts read these:
 - `TERANODE_VERSION` — image tag, bumped by `./update.sh`
 - `HOST_IP` — bind address for externally-exposed ports
-- `GOGC`, `SETTINGS_CONTEXT`
+- `SETTINGS_CONTEXT`
+- `MEM_LIMIT_<SERVICE>` — per-service container memory caps, written by `./setup.sh` scaled to host RAM (see `lib/mem_limits.sh`). Teranode derives its Go GC memory limit (GOMEMLIMIT) from each cap, so a capped service garbage-collects instead of ballooning past host RAM
 - `COMPOSE_PROFILES` — comma-separated list of optional services to run (`legacy`, `p2p`, `blockpersister`, `seeding`). Read directly by `docker compose`, so bare `docker compose up -d` honours it
 - `POSTGRES_PASSWORD`
 

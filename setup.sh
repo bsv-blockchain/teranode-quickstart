@@ -228,6 +228,16 @@ fi
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" pruner_block_trigger     "$PRUNER_TRIGGER"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" POSTGRES_PASSWORD        "$(gen_secret)"
 
+# Per-service container memory caps scaled to this host's RAM. Teranode
+# derives GOMEMLIMIT from each cap, keeping any single service from starving
+# Aerospike/Postgres on the host. See lib/mem_limits.sh.
+source "${REPO_ROOT}/lib/mem_limits.sh"
+TOTAL_RAM_GB=$(detect_total_ram_gb)
+echo ""
+echo_info "Writing per-service memory limits for a ${TOTAL_RAM_GB}GB host:"
+compute_mem_limits "$NETWORK" "$TOTAL_RAM_GB" | sed 's/^/    /'
+write_mem_limits "$ENV_FILE" "$NETWORK" "$TOTAL_RAM_GB"
+
 echo ""
 echo_green "Setup complete."
 case "$NETWORK" in

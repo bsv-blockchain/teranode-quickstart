@@ -88,6 +88,18 @@ fi
 "${REPO_ROOT}/lib/env_writer.sh" .env TERANODE_VERSION "$TARGET"
 echo_success "Set TERANODE_VERSION=$TARGET in .env (was $CURRENT)"
 
+# Backfill per-service memory caps for .env files created before quickstart
+# grew MEM_LIMIT_* support. Only writes keys that are absent — existing
+# user tuning is never touched. See lib/mem_limits.sh.
+source "${REPO_ROOT}/lib/mem_limits.sh"
+if ! grep -qE '^MEM_LIMIT_LEGACY=' .env; then
+    NETWORK="$(grep -E '^network=' .env | cut -d= -f2)"
+    TOTAL_RAM_GB=$(detect_total_ram_gb)
+    echo_info "Adding per-service memory limits for a ${TOTAL_RAM_GB}GB host (new in this quickstart version):"
+    compute_mem_limits "${NETWORK:-testnet}" "$TOTAL_RAM_GB" | sed 's/^/    /'
+    write_mem_limits .env "${NETWORK:-testnet}" "$TOTAL_RAM_GB" --only-missing
+fi
+
 echo ""
 echo_info "Next: ./start.sh"
 echo_info "  (docker compose pulls the new image and recreates only the changed services;"
