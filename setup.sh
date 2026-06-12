@@ -233,9 +233,10 @@ fi
 # Aerospike/Postgres on the host. See lib/mem_limits.sh.
 source "${REPO_ROOT}/lib/mem_limits.sh"
 TOTAL_RAM_GB=$(detect_total_ram_gb)
+MEM_LIMITS=$(compute_mem_limits "$NETWORK" "$TOTAL_RAM_GB")
 echo ""
 echo_info "Writing per-service memory limits for a ${TOTAL_RAM_GB}GB host:"
-compute_mem_limits "$NETWORK" "$TOTAL_RAM_GB" | sed 's/^/    /'
+echo "$MEM_LIMITS" | sed 's/^/    /'
 write_mem_limits "$ENV_FILE" "$NETWORK" "$TOTAL_RAM_GB"
 
 echo ""

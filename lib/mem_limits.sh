@@ -54,12 +54,28 @@ pruner:5
 MEM_LIMIT_FLOOR_MB=512
 
 detect_total_ram_gb() {
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo $(( $(sysctl -n hw.memsize) / 1024 / 1024 / 1024 ))
+    local bytes gb
+    # Prefer the Docker daemon's view of memory: that is the budget the
+    # containers actually share. On macOS the host's physical RAM is the
+    # wrong number — containers run inside the Docker Desktop VM, which is
+    # typically allocated far less than the Mac has.
+    bytes=$(docker info --format '{{.MemTotal}}' 2>/dev/null)
+    if [[ "$bytes" =~ ^[0-9]+$ ]] && [ "$bytes" -gt 0 ]; then
+        gb=$(( (bytes / 1024 / 1024 + 512) / 1024 ))
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        gb=$(( $(sysctl -n hw.memsize) / 1024 / 1024 / 1024 ))
     else
         # free -g truncates (31.7 GB -> 31); compute from MB and round.
-        free -m | awk 'NR==2 {print int(($2 + 512) / 1024)}'
+        gb=$(free -m | awk 'NR==2 {print int(($2 + 512) / 1024)}')
     fi
+    # Clamp to >= 1: sub-1GB hosts would otherwise round to 0, fail
+    # compute_mem_limits' input guard, and — under `set -eo pipefail` in
+    # setup.sh — abort setup mid-run. The 512m per-service floor is the real
+    # protection at that size anyway.
+    if ! [[ "$gb" =~ ^[0-9]+$ ]] || [ "$gb" -lt 1 ]; then
+        gb=1
+    fi
+    echo "$gb"
 }
 
 # compute_mem_limits <network> <total_gb>
@@ -75,6 +91,7 @@ compute_mem_limits() {
     fi
 
     local entry service pct limit_mb
+    local IFS=$' \t\n' # the table split below must not inherit a caller's IFS
     for entry in $MEM_LIMIT_TABLE; do
         service="${entry%%:*}"
         pct="${entry##*:}"
