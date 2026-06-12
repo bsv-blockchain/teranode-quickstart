@@ -88,6 +88,30 @@ fi
 "${REPO_ROOT}/lib/env_writer.sh" .env TERANODE_VERSION "$TARGET"
 echo_success "Set TERANODE_VERSION=$TARGET in .env (was $CURRENT)"
 
+# Remove a stale global GOGC override (shipped by older .env.example).
+# env_file injects it into every container, and teranode skips its own
+# per-service GC tuning (GOMEMLIMIT-aware GOGC=100) when GOGC is set in the
+# environment — under big-block load the heap then runs deferred GC straight
+# into the GOMEMLIMIT ceiling.
+if grep -qE '^GOGC=' .env; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' '/^GOGC=/d' .env
+    else
+        sed -i '/^GOGC=/d' .env
+    fi
+    echo_info "Removed GOGC override from .env — teranode auto-tunes GC per service (GOMEMLIMIT from the container cap, GOGC=100)."
+fi
+
+# Backfill per-service memory caps for .env files created before quickstart
+# grew MEM_LIMIT_* support. write_mem_limits --only-missing is idempotent and
+# per-key: keys the user set (or that a previous run wrote) are never touched,
+# and individually deleted keys are restored.
+source "${REPO_ROOT}/lib/mem_limits.sh"
+NETWORK="$(grep -E '^network=' .env | head -1 | cut -d= -f2 | tr -d '\r')"
+TOTAL_RAM_GB=$(detect_total_ram_gb)
+write_mem_limits .env "${NETWORK:-testnet}" "$TOTAL_RAM_GB" --only-missing
+echo_info "Ensured per-service MEM_LIMIT_* caps in .env (host: ${TOTAL_RAM_GB}GB; existing values untouched)."
+
 echo ""
 echo_info "Next: ./start.sh"
 echo_info "  (docker compose pulls the new image and recreates only the changed services;"
