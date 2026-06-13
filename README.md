@@ -262,6 +262,7 @@ teranode-quickstart/
 │   └── reachability.sh            # post-start public-URL + P2P probe
 └── docs/
     ├── NETWORKS.md                # per-network notes & caveats
+    ├── IBD-TUNING.md              # Aerospike DEVICE_OVERLOAD / big-block era tuning
     └── UPDATING.md                # detailed update flow
 ```
 
@@ -297,6 +298,8 @@ For anything that smells like a Teranode bug (not a quickstart bug): open an iss
 ## Disclaimer
 
 Teranode is under active development. Per-network caveats and recommended budgets live in [docs/NETWORKS.md](docs/NETWORKS.md) — read it before deciding to run on a particular network.
+
+Syncing through mainnet/testnet history pushes hard on the local Aerospike; if you see `DEVICE_OVERLOAD` errors or blocks that stall during sync, work through [docs/IBD-TUNING.md](docs/IBD-TUNING.md).
 
 This quickstart is provided as-is without warranty. Always verify configurations and test thoroughly before using in production environments. Ensure you understand the implications of running a Teranode instance, including disk space, bandwidth, and security considerations.
 
