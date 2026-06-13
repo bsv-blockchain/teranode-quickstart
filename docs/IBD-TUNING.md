@@ -4,7 +4,7 @@ During initial block download (IBD) on mainnet/testnet, certain block eras
 generate write bursts that overwhelm the local Aerospike's storage device.
 This shows up as:
 
-```
+```text
 ERROR | utxo/aerospike/spend.go | Failed to handle extra records: STORAGE_ERROR (69):
   error in aerospike increment batch records -> ... ResultCode: DEVICE_OVERLOAD ...
 ```
@@ -74,9 +74,10 @@ Notes:
 
 The quickstart ships `aerospike-tune.sh` for live (no-restart) tuning:
 
-- **`max-write-cache`** — the write-burst absorber. Quickstart raises it well
-  above the 64MB default already; if overloads persist after the Teranode
-  throttles above, double it (RAM permitting). Dynamic:
+- **`max-write-cache`** — the write-burst absorber. `config/aerospike.conf`
+  ships 2048M steady-state, and `aerospike-tune.sh catchup` raises it to 8192M;
+  if overloads persist after the Teranode throttles above, double it again (RAM
+  permitting). Dynamic:
   `set-config:context=namespace;id=utxo-store;max-write-cache=16G`.
 - **Defrag mode** — catch-up defrag (`defrag-lwm-pct` raised, `defrag-sleep=0`)
   competes with client writes for device bandwidth. Only run it when
