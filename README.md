@@ -208,7 +208,7 @@ values and the catch-up tradeoffs.
 ./update.sh --check          # dry-run: show current vs latest
 ./update.sh                  # interactive update
 ./update.sh --yes            # non-interactive (same as above + auto-confirm)
-./update.sh --to v0.15.1     # pin to a specific tag (rollback)
+./update.sh --to v0.15.9     # pin to a specific tag (rollback)
 ```
 
 The update flow:
@@ -219,6 +219,8 @@ The update flow:
 4. On confirm, writes the new tag back to `.env` (git-ignored → no tracked-file diff).
 5. Prints the next step: run `./start.sh` to pull the new image if needed and recreate containers whose image tag changed.
 6. `update.sh` itself never touches Docker; rollout stays separate from changing the local version pin.
+
+Upgrading from below v0.15.7 on testnet or teratestnet: if your node stopped advancing, see [docs/UPDATING.md](docs/UPDATING.md) for the `rewindblockchain` recovery path.
 
 Because the version pin lives only in `.env` (and `.env` is git-ignored), `git pull` on this repo will never conflict with your local version choice. The committed `.env.example` tracks the maintainer-recommended default for new installs.
 
