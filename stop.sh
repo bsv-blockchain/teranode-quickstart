@@ -9,9 +9,16 @@ cd "$REPO_ROOT"
 source "${REPO_ROOT}/lib/colors.sh"
 
 if docker ps --format '{{.Names}}' | grep -q '^blockchain$'; then
-    echo_info "Asking Teranode to enter IDLE state (best effort)..."
-    if ! docker exec blockchain teranode-cli setfsmstate --fsmstate IDLE; then
-        echo_warning "FSM IDLE transition failed — continuing with shutdown."
+    fsm_state=$("${REPO_ROOT}/lib/fsm.sh" state 2>/dev/null || true)
+    if [ "$fsm_state" = "CATCHINGBLOCKS" ]; then
+        # Teranode refuses manual transitions out of CATCHINGBLOCKS; the state
+        # is persisted and ./start.sh resumes from it.
+        echo_info "FSM in CATCHINGBLOCKS — skipping IDLE transition."
+    else
+        echo_info "Asking Teranode to enter IDLE state (best effort)..."
+        if ! docker exec blockchain teranode-cli setfsmstate --fsmstate IDLE; then
+            echo_warning "FSM IDLE transition failed — continuing with shutdown."
+        fi
     fi
 else
     echo_info "blockchain container not running — skipping FSM transition."

@@ -40,7 +40,7 @@ echo_info "Network: $NETWORK"
 docker compose up -d
 
 echo ""
-"${REPO_ROOT}/lib/fsm.sh" up || echo_warning "FSM transition failed — see above. Try ./status.sh and ./cli.sh setfsmstate --fsmstate RUNNING manually."
+"${REPO_ROOT}/lib/fsm.sh" up || echo_warning "FSM transition failed — see above. Try ./status.sh and ./cli.sh setfsmstate --fsmstate CATCHINGBLOCKS (RUNNING on v0.15.x) manually."
 
 echo ""
 echo_success "Stack up. Useful URLs:"

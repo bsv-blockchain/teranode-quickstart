@@ -1,6 +1,6 @@
 #!/bin/bash
 # Thin wrapper around teranode-cli running inside the blockchain container.
-# Usage: ./cli.sh getinfo | ./cli.sh setfsmstate --fsmstate RUNNING | etc.
+# Usage: ./cli.sh getinfo | ./cli.sh setfsmstate --fsmstate CATCHINGBLOCKS | etc.
 
 set -eo pipefail
 
