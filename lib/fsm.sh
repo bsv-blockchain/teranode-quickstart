@@ -31,8 +31,8 @@ wait_for_blockchain_healthy() {
 
 current_fsm_state() {
     docker exec blockchain teranode-cli getfsmstate 2>/dev/null \
-        | grep -Eo 'state:[[:space:]]*[A-Z]+' \
-        | awk '{print $2}'
+        | grep -Eio 'state:[[:space:]]*[A-Z]+' \
+        | awk '{print toupper($2)}'
 }
 
 set_fsm_running() {
