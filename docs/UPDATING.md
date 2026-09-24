@@ -13,7 +13,7 @@
 2. Queries `api.github.com/repos/bsv-blockchain/teranode/releases/latest`.
 3. If different, prints current tag, target tag, and release URL.
 4. On confirm, `lib/env_writer.sh` rewrites only the `TERANODE_VERSION=` line in `.env`.
-5. Prints next-step hint: run `./start.sh` to pull the new image and recreate the changed Teranode services. Data volumes persist; FSM transitions back to `RUNNING` automatically.
+5. Prints next-step hint: run `./start.sh` to pull the new image and recreate the changed Teranode services. Data volumes persist; A node stopped in `IDLE` is moved to `CATCHINGBLOCKS` (`RUNNING` on v0.15.x) and promotes itself to `RUNNING` once caught up; a persisted `CATCHINGBLOCKS` or `RUNNING` state is resumed as-is.
 
 `update.sh` itself never touches Docker — it only bumps `.env`. This keeps the version pin and the rollout as separate steps; you can `--check` or pin a tag without touching the running stack.
 

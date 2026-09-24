@@ -174,7 +174,7 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 |------------------|-------------------------------------------------------------|
 | `./setup.sh`     | Interactive first-time config. Writes `.env`.               |
 | `./start.sh`     | Bring the stack up for the configured network.              |
-| `./stop.sh`      | Graceful shutdown (FSM → IDLE, then `docker compose down`). |
+| `./stop.sh`      | Graceful shutdown (FSM → IDLE unless catching up, then `docker compose down`). |
 | `./update.sh`    | Check GitHub for a newer Teranode release; bump `.env`; pull; restart. See below. |
 | `./cli.sh …`     | Run `teranode-cli` inside the blockchain container (FSM state, seeder, admin). Ex: `./cli.sh getfsmstate` |
 | `./rpc.sh …`     | Call JSON-RPC at localhost:9292 (chain queries, TX submission). Ex: `./rpc.sh getblockcount` |
@@ -286,7 +286,7 @@ For remote RPC access: put an authenticated reverse proxy in front of 9292 on an
 ## Troubleshooting
 
 - **`docker compose` fails with "services.blockchain refers to undefined volume teranode-data"** — you ran `docker compose` without this repo's root `docker-compose.yml`. Make sure you're in the repo root when invoking `start.sh`.
-- **FSM stuck in `INIT`** — `./cli.sh setfsmstate --fsmstate RUNNING` manually. `start.sh` tries this after health checks but it can race.
+- **FSM stuck in `IDLE`** — `./cli.sh setfsmstate --fsmstate CATCHINGBLOCKS` manually (`RUNNING` on v0.15.x, which has no `IDLE` → `CATCHINGBLOCKS` transition). `start.sh` does this once the blockchain container is healthy; rerun it if that step timed out. From `CATCHINGBLOCKS` the node moves to `RUNNING` on its own once catchup completes.
 - **Aerospike fails with "device full" / "out of space"** — UTXO has outgrown the 640 GB CE cap. See the Aerospike subsection in Prerequisites for capacity-expansion options.
 - **Grafana shows "No data"** — Prometheus needs ~1 minute to scrape the first datapoints. If still empty, check `http://localhost:9090/targets`.
 - **Port X already in use** — another process holds the port. `lsof -i :X` to find it. Edit `HOST_IP` or remap in `docker-compose.yml`.
