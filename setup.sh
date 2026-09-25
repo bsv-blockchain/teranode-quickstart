@@ -239,6 +239,9 @@ echo_info "Writing per-service memory limits for a ${TOTAL_RAM_GB}GB host:"
 echo "$MEM_LIMITS" | sed 's/^/    /'
 write_mem_limits "$ENV_FILE" "$NETWORK" "$TOTAL_RAM_GB"
 
+source "${REPO_ROOT}/lib/config_perms.sh"
+fix_config_perms "$REPO_ROOT"
+
 echo ""
 echo_green "Setup complete."
 case "$NETWORK" in

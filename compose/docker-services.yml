@@ -75,6 +75,8 @@ services:
     environment:
       CONFIG_FILEPATH: /etc/console/config.yml
     volumes:
+      # Non-root containers: host files mounted from ../config must be
+      # world-readable. lib/config_perms.sh keeps them so; add new mounts there.
       - ../config/protos:/etc/protos:ro
       - ../config/kafka-console-config.yml:/etc/console/config.yml:ro
     ports:
@@ -125,6 +127,8 @@ services:
     networks:
       - teranode-network
     volumes:
+      # Non-root containers: host files mounted from ../config must be
+      # world-readable. lib/config_perms.sh keeps them so; add new mounts there.
       - ../config/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
     profiles:
@@ -138,6 +142,8 @@ services:
     networks:
       - teranode-network
     volumes:
+      # Non-root containers: host files mounted from ../config must be
+      # world-readable. lib/config_perms.sh keeps them so; add new mounts there.
       - ../config/grafana_datasource.yaml:/etc/grafana/provisioning/datasources/main.yaml
       - ../config/grafana_dashboards/main.yaml:/etc/grafana/provisioning/dashboards/main.yaml
       - ../config/grafana_dashboards:/var/lib/grafana/dashboards
