@@ -43,16 +43,19 @@ fix_config_perms() {
 
     local uid changed
     uid="$(id -u)"
+    # find exits non-zero on any unreadable subdirectory; that must not abort
+    # a caller running under set -e -o pipefail. Unreadable paths are reported
+    # below instead.
     changed=$( {
         find -P "${paths[@]}" -type d -user "$uid" ! -perm -0005 -exec chmod a+rx {} \; -print
         find -P "${paths[@]}" -type f -user "$uid" ! -perm -0004 -exec chmod a+r {} \; -print
-    } 2>/dev/null | wc -l | tr -d ' ')
+    } 2>/dev/null | wc -l | tr -d ' ') || true
     if [ "${changed:-0}" -gt 0 ]; then
         echo_info "Made ${changed} config path(s) readable for the monitoring containers (restrictive umask)."
     fi
 
     local unreadable
-    unreadable=$(find -P "${paths[@]}" \( -type d ! -perm -0005 \) -o \( -type f ! -perm -0004 \) 2>/dev/null)
+    unreadable=$(find -P "${paths[@]}" \( -type d ! -perm -0005 \) -o \( -type f ! -perm -0004 \) 2>/dev/null) || true
     if [ -n "$unreadable" ]; then
         echo_warning "These are not readable by the prometheus/grafana/kafka-console containers:"
         while IFS= read -r p; do echo "    $p"; done <<< "$unreadable"
