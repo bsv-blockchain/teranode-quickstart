@@ -37,6 +37,11 @@ NETWORK="${network:?network not set in .env}"
 echo_info "Network: $NETWORK"
 [ -n "${COMPOSE_PROFILES:-}" ] && echo_info "Profiles: $COMPOSE_PROFILES"
 
+# Re-applied on every start: files arriving via a later git pull get the
+# umask of that pull, not the modes setup.sh set.
+source "${REPO_ROOT}/lib/config_perms.sh"
+fix_config_perms "$REPO_ROOT"
+
 docker compose up -d
 
 echo ""
