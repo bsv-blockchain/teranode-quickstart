@@ -12,9 +12,11 @@
 # hold credentials. Keep the list in step with the monitoring mounts in
 # compose/docker-services.yml.
 #
-# Only regular files and directories owned by the invoking user are touched,
-# and symlinks are never followed (find -P, -type f/d), so a link planted in
-# config/ cannot widen the mode of its target.
+# Only regular, single-link files and directories owned by the invoking user
+# are touched, and symlinks under config/ are never followed (find -P,
+# -type f/d, -links 1). This guards against a stray link in a checkout; it is
+# not a boundary against someone who can already write to it. Under sudo the
+# user's files are left alone and listed instead: fix them as their owner.
 #
 # Set QUICKSTART_SKIP_CONFIG_PERMS=1 to manage these modes yourself.
 # Sourced by setup.sh and start.sh.
@@ -48,7 +50,7 @@ fix_config_perms() {
     # below instead.
     changed=$( {
         find -P "${paths[@]}" -type d -user "$uid" ! -perm -0005 -exec chmod a+rx {} \; -print
-        find -P "${paths[@]}" -type f -user "$uid" ! -perm -0004 -exec chmod a+r {} \; -print
+        find -P "${paths[@]}" -type f -links 1 -user "$uid" ! -perm -0004 -exec chmod a+r {} \; -print
     } 2>/dev/null | wc -l | tr -d ' ') || true
     if [ "${changed:-0}" -gt 0 ]; then
         echo_info "Made ${changed} config path(s) readable for the monitoring containers (restrictive umask)."
