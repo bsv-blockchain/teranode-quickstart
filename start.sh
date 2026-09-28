@@ -34,6 +34,11 @@ fi
 
 NETWORK="${network:?network not set in .env}"
 
+# Backfill for .env files written before Teranode required the key. Every
+# Teranode service reads it from .env, so this runs before compose up.
+source "${REPO_ROOT}/lib/admin_key.sh"
+ensure_admin_api_key .env
+
 echo_info "Network: $NETWORK"
 [ -n "${COMPOSE_PROFILES:-}" ] && echo_info "Profiles: $COMPOSE_PROFILES"
 

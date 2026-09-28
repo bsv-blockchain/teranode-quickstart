@@ -228,6 +228,17 @@ fi
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" pruner_block_trigger     "$PRUNER_TRIGGER"
 "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" POSTGRES_PASSWORD        "$(gen_secret)"
 
+# Shared key every Teranode service needs to call Blockchain. Reuse the key
+# from the .env being replaced, so re-running setup does not rotate it.
+source "${REPO_ROOT}/lib/admin_key.sh"
+if [ -f "${ENV_FILE}.bak" ]; then
+    OLD_ADMIN_KEY=$(grep -E '^grpc_admin_api_key=' "${ENV_FILE}.bak" | head -1 | cut -d= -f2- || true)
+    if [ -n "$OLD_ADMIN_KEY" ]; then
+        "${REPO_ROOT}/lib/env_writer.sh" "$ENV_FILE" grpc_admin_api_key "$OLD_ADMIN_KEY"
+    fi
+fi
+ensure_admin_api_key "$ENV_FILE"
+
 # Per-service container memory caps scaled to this host's RAM. Teranode
 # derives GOMEMLIMIT from each cap, keeping any single service from starving
 # Aerospike/Postgres on the host. See lib/mem_limits.sh.
