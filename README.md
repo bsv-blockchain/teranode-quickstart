@@ -81,10 +81,16 @@ Either path requires editing `compose/docker-services.yml` and the Aerospike con
 Initial sync is faster if you seed the UTXO set from an existing snapshot instead of replaying the whole chain.
 
 BSVA hosts snapshots for **mainnet**, **testnet**, and **teratestnet** at
-`https://bsva-teranode-seeds.s3.gra.io.cloud.ovh.net/<network>-teranode/<height>/`, a public object storage
-bucket read anonymously. `seed-fetch.sh` auto-discovers the latest completed height
-(via the `snapshot_date.txt` marker) and downloads the UTXO files into `seed-cache/`
-with 8 parallel range streams (`SEED_STREAMS=<n>` to change):
+<https://bsva-teranode-seeds.s3.gra.io.cloud.ovh.net/>, an OVHcloud S3-compatible
+object storage bucket with public read access: no account or credentials needed.
+Opening that URL returns an XML listing of every file with its size and date; append a
+file's `<Key>` to the URL to download it. Snapshots are laid out as
+`<network>-teranode/<height>/`, and `<network>-teranode/latest.json` describes the newest
+one (height, hash, files, sizes, sha256).
+
+`seed-fetch.sh` auto-discovers the latest completed height (via the `snapshot_date.txt`
+marker) and downloads the UTXO files into `seed-cache/` with 8 parallel range streams
+(`SEED_STREAMS=<n>` to change):
 
 ```bash
 ./seed-fetch.sh           # downloads latest for the network in .env
@@ -305,7 +311,7 @@ This quickstart is provided as-is without warranty. Always verify configurations
 
 ### Snapshot trust and security considerations
 
-The UTXO snapshots available at https://bsva-teranode-seeds.s3.gra.io.cloud.ovh.net/ are provided as-is by the BSV Association. While these snapshots can significantly speed up initial node setup, it's critical to understand the security implications before using them in different environments.
+The UTXO snapshots available at <https://bsva-teranode-seeds.s3.gra.io.cloud.ovh.net/> are provided as-is by the BSV Association. While these snapshots can significantly speed up initial node setup, it's critical to understand the security implications before using them in different environments.
 
 #### Usage guidelines and best practices
 
