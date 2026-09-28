@@ -5,7 +5,7 @@
 #   ./seed.sh                                     # prompt to fetch BSVA-hosted snapshot
 #   ./seed.sh <block-hash> <local-seed-dir>      # use existing local seed data (BYO)
 #
-# Snapshots: BSVA hosts at https://svnode-snapshots.bsvb.tech/<network>-teranode/<height>/
+# Snapshots: BSVA hosts at https://bsva-teranode-seeds.s3.gra.io.cloud.ovh.net/<network>-teranode/<height>/
 # for mainnet, testnet, and teratestnet. ./seed-fetch.sh discovers the latest
 # completed height and downloads it. Prefer to build your own? Pass a local
 # directory containing the .utxo-headers + .utxo-set files instead.
@@ -46,7 +46,7 @@ esac
 
 # No args → prompt to fetch BSVA-hosted snapshot for the configured network.
 if [ -z "$HASH" ] && [ -z "$SOURCE" ]; then
-    echo_info "BSVA hosts ${NETWORK} snapshots at https://svnode-snapshots.bsvb.tech/${NETWORK}-teranode/"
+    echo_info "BSVA hosts ${NETWORK} snapshots at https://bsva-teranode-seeds.s3.gra.io.cloud.ovh.net/${NETWORK}-teranode/"
     echo_info "You can also build your own seed data and pass the directory to seed.sh."
     read -p "$(echo_yellow "Fetch the latest BSVA-hosted snapshot now? [Y/n]: ")" reply
     reply=${reply:-Y}

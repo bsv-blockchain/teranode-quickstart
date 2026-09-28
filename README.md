@@ -81,9 +81,10 @@ Either path requires editing `compose/docker-services.yml` and the Aerospike con
 Initial sync is faster if you seed the UTXO set from an existing snapshot instead of replaying the whole chain.
 
 BSVA hosts snapshots for **mainnet**, **testnet**, and **teratestnet** at
-`https://svnode-snapshots.bsvb.tech/<network>-teranode/<height>/`. `seed-fetch.sh`
-auto-discovers the latest completed height (via the `snapshot_date.txt` marker)
-and rsyncs the UTXO files into `seed-cache/`:
+`https://bsva-teranode-seeds.s3.gra.io.cloud.ovh.net/<network>-teranode/<height>/`, a public object storage
+bucket read anonymously. `seed-fetch.sh` auto-discovers the latest completed height
+(via the `snapshot_date.txt` marker) and downloads the UTXO files into `seed-cache/`
+with 8 parallel range streams (`SEED_STREAMS=<n>` to change):
 
 ```bash
 ./seed-fetch.sh           # downloads latest for the network in .env
@@ -304,7 +305,7 @@ This quickstart is provided as-is without warranty. Always verify configurations
 
 ### Snapshot trust and security considerations
 
-The UTXO snapshots available at https://svnode-snapshots.bsvb.tech/ are provided as-is by the BSV Association. While these snapshots can significantly speed up initial node setup, it's critical to understand the security implications before using them in different environments.
+The UTXO snapshots available at https://bsva-teranode-seeds.s3.gra.io.cloud.ovh.net/ are provided as-is by the BSV Association. While these snapshots can significantly speed up initial node setup, it's critical to understand the security implications before using them in different environments.
 
 #### Usage guidelines and best practices
 
