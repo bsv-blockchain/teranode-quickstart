@@ -1,10 +1,11 @@
 #!/bin/bash
 # Fetch the latest BSVA-hosted Teranode UTXO snapshot.
 #
-# Browses https://svnode-snapshots.bsvb.tech/<network>-teranode/, picks the
-# newest height directory whose snapshot_date.txt completion marker exists,
-# rsyncs the .utxo-headers + .utxo-set files (and their .sha256 companions)
-# into seed-cache/<network>-teranode/<height>/, and verifies checksums.
+# Lists the public bsva-teranode-seeds object storage bucket under
+# <network>-teranode/, picks the newest height directory whose snapshot_date.txt
+# completion marker exists, downloads the .utxo-headers + .utxo-set files (and
+# their .sha256 companions) into seed-cache/<network>-teranode/<height>/, and
+# verifies checksums. The bucket is read anonymously; no credentials needed.
 #
 # Writes seed-cache/.last-fetch.env so seed.sh can pick up FETCHED_HASH +
 # FETCHED_DIR. Also prints the next-step ./seed.sh command on success.
@@ -15,6 +16,7 @@
 #
 # Env overrides:
 #   SEED_HEIGHT=<n>                 # pin to a specific snapshot height
+#   SEED_STREAMS=<n>                # parallel range streams for the download (default 8)
 #
 # This script does NOT touch Aerospike/Postgres. It only downloads the data.
 # Run ./seed.sh after this script finishes to actually load the snapshot.
@@ -30,7 +32,17 @@ set -a
 [ -f .env ] && source .env
 set +a
 
-SNAPSHOT_BASE="https://svnode-snapshots.bsvb.tech"
+# Public HTTPS base, used for the completion-marker check.
+SNAPSHOT_BASE="https://bsva-teranode-seeds.s3.gra.io.cloud.ovh.net"
+# The same bucket as an anonymous rclone S3 remote, for listing and downloading.
+# force_path_style=false: the endpoint only accepts anonymous listing with
+# virtual-host addressing (<bucket>.s3...), not path-style.
+SNAPSHOT_REMOTE=":s3,provider=Other,endpoint='https://s3.gra.io.cloud.ovh.net',region=gra,env_auth=false,force_path_style=false:bsva-teranode-seeds"
+
+# The utxo-set is a single ~570 GB object on mainnet, so parallelism has to come
+# from byte ranges within it. One stream tops out around 1 Gbps; 8 streams
+# measured 4-6x that on faster links, with little gained beyond.
+SEED_STREAMS="${SEED_STREAMS:-8}"
 
 NETWORK="${1:-${network:-}}"
 if [ -z "$NETWORK" ]; then
@@ -75,8 +87,9 @@ snapshot_complete() {
 
 get_latest_height() {
     local base_url="$1"
+    local base_remote="$2"
     local listing
-    if ! listing=$(rclone lsf ":http:" --http-url "${base_url}" 2>/dev/null); then
+    if ! listing=$(rclone lsf --dirs-only "${base_remote}" 2>/dev/null); then
         echo_error "Failed to list ${base_url}" >&2
         return 1
     fi
@@ -105,9 +118,9 @@ get_latest_height() {
 
 get_snapshot_hash() {
     # The utxo-headers filename is <hash>.utxo-headers; that hash is the seed hash.
-    local snap_url="$1"
+    local snap_remote="$1"
     local listing
-    listing=$(rclone lsf ":http:" --http-url "${snap_url}" 2>/dev/null) || return 1
+    listing=$(rclone lsf "${snap_remote}" 2>/dev/null) || return 1
     while IFS= read -r line; do
         if [[ "$line" =~ ^([0-9a-fA-F]{64})\.utxo-headers$ ]]; then
             echo "${BASH_REMATCH[1]}"
@@ -149,7 +162,13 @@ verify_sha256() {
 
 ensure_rclone || exit 1
 
+if ! [[ "$SEED_STREAMS" =~ ^[1-9][0-9]*$ ]]; then
+    echo_error "SEED_STREAMS must be a positive integer (got: ${SEED_STREAMS})."
+    exit 2
+fi
+
 NETWORK_BASE="${SNAPSHOT_BASE}/${NETWORK}-teranode/"
+NETWORK_REMOTE="${SNAPSHOT_REMOTE}/${NETWORK}-teranode/"
 
 if [ -n "${SEED_HEIGHT:-}" ]; then
     if ! [[ "$SEED_HEIGHT" =~ ^[0-9]+$ ]]; then
@@ -164,14 +183,15 @@ if [ -n "${SEED_HEIGHT:-}" ]; then
     fi
 else
     echo_info "Discovering latest ${NETWORK}-teranode snapshot ..."
-    HEIGHT=$(get_latest_height "$NETWORK_BASE") || exit 1
+    HEIGHT=$(get_latest_height "$NETWORK_BASE" "$NETWORK_REMOTE") || exit 1
 fi
 
 SNAPSHOT_URL="${NETWORK_BASE}${HEIGHT}/"
+SNAPSHOT_PATH="${NETWORK_REMOTE}${HEIGHT}/"
 echo_success "Latest complete snapshot: height ${HEIGHT}"
 echo_info "Source: ${SNAPSHOT_URL}"
 
-HASH=$(get_snapshot_hash "$SNAPSHOT_URL") || {
+HASH=$(get_snapshot_hash "$SNAPSHOT_PATH") || {
     echo_error "Could not derive snapshot hash from ${SNAPSHOT_URL}"
     exit 1
 }
@@ -183,11 +203,9 @@ mkdir -p "$SEED_DATA"
 echo_info "Downloading to ${SEED_DATA} ..."
 echo_warning "This is large (520+ GB on mainnet). May take hours."
 
-if ! rclone copy ":http:" "$SEED_DATA" \
-                --http-url "$SNAPSHOT_URL" \
+if ! rclone copy "$SNAPSHOT_PATH" "$SEED_DATA" \
                 --progress \
-                --transfers 4 \
-                --checkers 8 \
+                --multi-thread-streams "$SEED_STREAMS" \
                 --retries 3 \
                 --low-level-retries 10 \
                 --include "*.utxo-headers" \
