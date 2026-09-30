@@ -40,7 +40,7 @@ for arg in "$@"; do
     esac
 done
 
-log() { [ "$QUIET" -eq 0 ] && echo_info "$1"; }
+log() { [ "$QUIET" -eq 1 ] || echo_info "$1"; }
 
 compose() {
     docker compose "$@"
