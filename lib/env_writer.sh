@@ -28,5 +28,9 @@ if grep -qE "^${KEY}=" "$FILE"; then
         sed -i -E "s|^${KEY}=.*|${KEY}=${escaped_value}|" "$FILE"
     fi
 else
+    # A file without a trailing newline would glue KEY=VALUE onto its last line.
+    if [ -s "$FILE" ] && [ -n "$(tail -c 1 "$FILE")" ]; then
+        echo >> "$FILE"
+    fi
     echo "${KEY}=${VALUE}" >> "$FILE"
 fi

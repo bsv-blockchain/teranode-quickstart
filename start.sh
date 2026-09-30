@@ -34,6 +34,15 @@ fi
 
 NETWORK="${network:?network not set in .env}"
 
+# Backfill for .env files written before Teranode required the key. Every
+# Teranode service reads it from .env, so this runs before compose up. Not
+# fatal: releases before the requirement still start without it.
+source "${REPO_ROOT}/lib/admin_key.sh"
+if ! ensure_admin_api_key .env; then
+    echo_warning "Could not write grpc_admin_api_key to .env (not writable by $(id -un)?)."
+    echo_warning "Newer Teranode releases will not start Blockchain without it. Fix: make .env writable and re-run, or add grpc_admin_api_key=<output of openssl rand -hex 32> to .env."
+fi
+
 echo_info "Network: $NETWORK"
 [ -n "${COMPOSE_PROFILES:-}" ] && echo_info "Profiles: $COMPOSE_PROFILES"
 

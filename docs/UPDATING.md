@@ -17,6 +17,16 @@
 
 `update.sh` itself never touches Docker — it only bumps `.env`. This keeps the version pin and the rollout as separate steps; you can `--check` or pin a tag without touching the running stack.
 
+## Admin API key
+
+Newer Teranode releases refuse to start Blockchain without
+`grpc_admin_api_key`, and every other service needs the same value to call it.
+`./start.sh` generates one into `.env` when it is missing or blank, so an older
+`.env` needs no manual step: run `./update.sh` then `./start.sh` as usual. It
+never replaces a value you already set. If you rotate the key, run `./start.sh`
+so every service restarts with the new value; a service left on the old key
+fails its readiness check.
+
 ## Upgrading from below v0.15.7 (testnet / teratestnet)
 
 Releases before v0.15.7 dropped bare `OP_RETURN` outputs from the UTXO set at
