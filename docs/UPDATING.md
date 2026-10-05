@@ -37,16 +37,16 @@ that is already wedged — the bad block is still in the local store.
 
 A node that kept advancing needs none of this. Upgrade and carry on.
 
-If your node stalled before you upgraded, rewind past the bad block on v0.15.9
+If your node stalled before you upgraded, rewind past the bad block on v0.15.9 or later
 and let it re-sync with the fix in effect:
 
 ```bash
-./start.sh                                       # on v0.15.9, stack up
+./start.sh                                       # on v0.15.9+, stack up
 ./rpc.sh getblockcount                           # note the stalled height
 ./cli.sh setfsmstate --fsmstate IDLE             # rewind refuses unless IDLE
 ./cli.sh rewindblockchain --target-height <h> --dry-run
 ./cli.sh rewindblockchain --target-height <h> --verify
-./cli.sh setfsmstate --fsmstate RUNNING
+./cli.sh setfsmstate --fsmstate CATCHINGBLOCKS   # RUNNING on v0.15.x
 ```
 
 `<h>` is a few blocks below where the node stalled. `--dry-run` logs every
