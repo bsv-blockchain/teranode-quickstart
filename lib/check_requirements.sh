@@ -164,8 +164,8 @@ check_ports() {
     #   8084 propagation, 8090 asset, 9092 kafka, 9292 rpc
     local ports=(3000 5432 8081 8084 8090 9092 9292)
     # Profile-gated ports — only included if the matching profile is active.
-    profile_active p2p            && ports+=(8000 9905)        # asset-cache, peer
-    profile_active monitoring     && ports+=(3005 8080 9090)   # grafana, kafka-console, prometheus
+    profile_active p2p            && ports+=(8000 9905)             # asset-cache, peer
+    profile_active monitoring     && ports+=(3005 8080 9090 9094)   # grafana, kafka-console, prometheus, alertmanager
 
     local conflicts=()
     for port in "${ports[@]}"; do

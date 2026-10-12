@@ -9,6 +9,7 @@ volumes:
   aerospike-smd:
   teranode-data:
   prometheus-data:
+  alertmanager-data:
   grafana-data:
 
 services:
@@ -113,6 +114,13 @@ services:
     extends:
       file: ./compose/docker-services.yml
       service: prometheus
+    profiles:
+      - monitoring
+
+  alertmanager:
+    extends:
+      file: ./compose/docker-services.yml
+      service: alertmanager
     profiles:
       - monitoring
 

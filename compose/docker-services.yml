@@ -130,7 +130,25 @@ services:
       # Non-root containers: host files mounted from ../config must be
       # world-readable. lib/config_perms.sh keeps them so; add new mounts there.
       - ../config/prometheus.yml:/etc/prometheus/prometheus.yml
+      # Canonical copy lives in bsv-blockchain/teranode; see config/prometheus.yml.
+      - ../config/blockassembly.rules.yml:/etc/prometheus/blockassembly.rules.yml:ro
       - prometheus-data:/prometheus
+    profiles:
+      - monitoring
+
+  alertmanager:
+    container_name: alertmanager
+    image: prom/alertmanager:v0.26.0
+    ports:
+      # 9093 on the host is already taken by Redpanda's pandaproxy.
+      - "127.0.0.1:9094:9093"
+    networks:
+      - teranode-network
+    volumes:
+      # Non-root containers: host files mounted from ../config must be
+      # world-readable. lib/config_perms.sh keeps them so; add new mounts there.
+      - ../config/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
     profiles:
       - monitoring
 

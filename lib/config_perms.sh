@@ -1,16 +1,17 @@
 #!/bin/bash
 # Make bind-mounted config readable by the non-root monitoring containers.
 #
-# prometheus (uid 65534), grafana (uid 472) and the Redpanda console
-# (redpandaconsole) read host files under config/ through bind mounts, so
+# prometheus and alertmanager (uid 65534), grafana (uid 472) and the Redpanda
+# console (redpandaconsole) read host files under config/ through bind mounts, so
 # they need the other-read bit (and other-execute on mounted directories).
 # git does not record those bits; they come from the umask at clone/pull
 # time. A 027/077 umask (CIS, STIG and similar hardening baselines) clears
 # them and those containers exit with "permission denied".
 #
 # Every path listed here becomes world-readable, so none of them may ever
-# hold credentials. Keep the list in step with the monitoring mounts in
-# compose/docker-services.yml.
+# hold credentials. That includes alertmanager.yml: notifier secrets go in
+# separately mounted files referenced by *_file fields (README "Alerting").
+# Keep the list in step with the monitoring mounts in compose/docker-services.yml.
 #
 # Only regular, single-link files and directories owned by the invoking user
 # are touched, and symlinks under config/ are never followed (find -P,
@@ -28,6 +29,8 @@ fix_config_perms() {
         "${cfg}/protos"
         "${cfg}/grafana_dashboards"
         "${cfg}/prometheus.yml"
+        "${cfg}/blockassembly.rules.yml"
+        "${cfg}/alertmanager.yml"
         "${cfg}/grafana_datasource.yaml"
         "${cfg}/kafka-console-config.yml"
     )
@@ -59,7 +62,7 @@ fix_config_perms() {
     local unreadable
     unreadable=$(find -P "${paths[@]}" \( -type d ! -perm -0005 \) -o \( -type f ! -perm -0004 \) 2>/dev/null) || true
     if [ -n "$unreadable" ]; then
-        echo_warning "These are not readable by the prometheus/grafana/kafka-console containers:"
+        echo_warning "These are not readable by the prometheus/alertmanager/grafana/kafka-console containers:"
         while IFS= read -r p; do echo "    $p"; done <<< "$unreadable"
         echo_warning "Fix as their owner with chmod a+r (files) / a+rx (directories), or those containers will exit with 'permission denied'."
     fi

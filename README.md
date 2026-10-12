@@ -32,7 +32,8 @@ Running `./setup.sh && ./start.sh` stands up:
 | PostgreSQL 17          | Blockchain state & indexes                | 127.0.0.1:5432        |
 | Redpanda (Kafka)       | Inter-service event streaming             | 127.0.0.1:9092        |
 | Aerospike 8.1.2        | UTXO store                                | 127.0.0.1:3000        |
-| Prometheus             | Metrics                                   | 127.0.0.1:9090        |
+| Prometheus             | Metrics + block-assembly alert rules      | 127.0.0.1:9090        |
+| Alertmanager           | Alert routing (see [Alerting](#alerting)) | 127.0.0.1:9094        |
 | Grafana                | Dashboards (Teranode + Aerospike)         | http://localhost:3005 |
 | Kafka Console          | Topic viewer with protobuf decoding       | http://localhost:8080 |
 | Nginx asset cache      | Caching reverse proxy for asset API       | 127.0.0.1:8000        |
@@ -45,7 +46,7 @@ All services are internal by default. `HOST_IP` in `.env` controls binding for *
 | 8000  | asset-cache      | full-mode: reverse proxy points here for API    |
 | 9905  | P2P              | full-mode: inbound peer connections             |
 
-Everything else — RPC (9292), Grafana (3005), Prometheus (9090), Kafka (9092/8080), Postgres (5432), Aerospike (3000), internal gRPC (8084) — is hardcoded to `127.0.0.1`. Changing `HOST_IP=0.0.0.0` does **not** expose those; edit the compose files if you really need to.
+Everything else — RPC (9292), Grafana (3005), Prometheus (9090), Alertmanager (9094), Kafka (9092/8080), Postgres (5432), Aerospike (3000), internal gRPC (8084) — is hardcoded to `127.0.0.1`. Changing `HOST_IP=0.0.0.0` does **not** expose those; edit the compose files if you really need to.
 
 ---
 
@@ -210,6 +211,50 @@ values and the catch-up tradeoffs.
 
 ---
 
+## Alerting
+
+With the `monitoring` profile, Prometheus evaluates Teranode's block-assembly alert rules and sends firing alerts to Alertmanager (`http://localhost:9094`, also visible at `http://localhost:9090/alerts`):
+
+| Alert                          | Fires when                                                   |
+|--------------------------------|--------------------------------------------------------------|
+| `BlockAssemblyBehindTip`       | block assembly lags the chain tip for 10 minutes             |
+| `BlockAssemblyProcessingStuck` | catch-up/reorg/move-forward keeps failing for 15 minutes     |
+| `BlockAssemblerStuckInState`   | the assembler stays out of its `running` state for 1 minute  |
+| `SlowTipAdvance`               | P95 tip advance is above 1s for 10 minutes                   |
+| `FrequentReorgs`               | more than one reorg per 10 seconds, sustained for 5 minutes  |
+
+`config/blockassembly.rules.yml` and its unit tests are copies of `deploy/docker/base/` in [bsv-blockchain/teranode](https://github.com/bsv-blockchain/teranode). Change them there, not here.
+
+Alertmanager ships with **no notifier**, so nothing leaves the host until you add one. Keep your config and secret out of the tracked, world-readable `config/alertmanager.yml`:
+
+1. `cp config/alertmanager.yml alertmanager.local.yml` and add a notifier to the `default` receiver. Reference the secret through the `*_file` field (Slack `api_url_file`, webhook `url_file`, email `auth_password_file`):
+
+   ```yaml
+   receivers:
+     - name: default
+       slack_configs:
+         - api_url_file: /etc/alertmanager/secrets/slack_webhook_url
+           channel: '#teranode-alerts'
+           send_resolved: true
+   ```
+
+2. Write the webhook URL to `secrets/slack_webhook_url`. Alertmanager runs as uid 65534, so: `sudo chown 65534 secrets/slack_webhook_url && sudo chmod 400 secrets/slack_webhook_url`, and `chmod a+r alertmanager.local.yml`.
+3. Mount both from `docker-compose.override.yml`, which `docker compose` loads automatically:
+
+   ```yaml
+   services:
+     alertmanager:
+       volumes:
+         - ./alertmanager.local.yml:/etc/alertmanager/alertmanager.yml:ro
+         - ./secrets/slack_webhook_url:/etc/alertmanager/secrets/slack_webhook_url:ro
+   ```
+
+4. `docker compose up -d alertmanager`, then `docker exec alertmanager amtool check-config /etc/alertmanager/alertmanager.yml`.
+
+`alertmanager.local.yml`, `docker-compose.override.yml` and `secrets/` are git-ignored, so `git pull` leaves them alone.
+
+---
+
 ## Updating
 
 ```bash
@@ -260,6 +305,8 @@ teranode-quickstart/
 ├── config/
 │   ├── aerospike.conf
 │   ├── prometheus.yml / grafana_datasource.yaml / grafana_dashboards/
+│   ├── blockassembly.rules.yml    # alert rules, copied from teranode (don't edit here)
+│   ├── alertmanager.yml           # no notifier by default; see Alerting
 │   ├── kafka-console-config.yml / protos/
 │   ├── asset-cache-nginx.conf
 │   └── entrypoint.sh / wait.sh
