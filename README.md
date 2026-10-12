@@ -249,7 +249,12 @@ Alertmanager ships with **no notifier**, so nothing leaves the host until you ad
          - ./secrets/slack_webhook_url:/etc/alertmanager/secrets/slack_webhook_url:ro
    ```
 
-4. `docker compose up -d alertmanager`, then `docker exec alertmanager amtool check-config /etc/alertmanager/alertmanager.yml`.
+4. Check the config, then start it:
+
+   ```bash
+   docker compose run --rm --no-deps --entrypoint amtool alertmanager check-config /etc/alertmanager/alertmanager.yml
+   docker compose up -d alertmanager
+   ```
 
 `alertmanager.local.yml`, `docker-compose.override.yml` and `secrets/` are git-ignored, so `git pull` leaves them alone.
 
