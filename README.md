@@ -182,11 +182,18 @@ Teranode ships the mainnet protocol ID and genesis keys for every network, so on
 
 **Network.** Alert peers are found through the public IPFS DHT in client mode: the service dials the IPFS bootstrap nodes, then looks up peers on the alert topic. Dialing private address ranges is blocked. This is the traffic `p2p_dht_mode=off` avoids for the P2P service, and the Alert System has no equivalent switch. On abuse-sensitive hosts (Hetzner, OVH) clear it with your provider, or drop `alert` from `COMPOSE_PROFILES`.
 
-Port 9908 is not published. Outbound connections are enough to sync history and receive alerts. To also accept inbound alert peers, add `ports: ["9908:9908"]` to the `alert` service in `compose/docker-teranode.yml` and open 9908/tcp; the service advertises its public IP on port 9908, so keep the host port the same. `HOST_IP` does not cover this port.
+The node is outbound-only. Port 9908 is not published, and no address is advertised. Outbound connections are enough to sync history and receive alerts. With no public address on its interfaces, go-alert-system would otherwise ask `https://ifconfig.me/ip` on every libp2p address lookup and leak a TLS connection per request: about 1,500 open sockets and 2-3 requests/s at steady state. Advertising that address only gives other alert nodes an unreachable entry to dial. `compose/docker-teranode.yml` therefore points `ifconfig.me` at `127.0.0.1` for the alert container (`extra_hosts`). To accept inbound alert peers instead, add `ports: ["9908:9908"]` to the `alert` service, open 9908/tcp, and remove the `extra_hosts` entry so the node can advertise its public IP. Keep the host port at 9908, and expect the connection leak back. `HOST_IP` does not cover this port.
 
-**State.** Alert history lives in `alert.db` on the `teranode-data` volume (`/app/data/alert.db`); `./clean.sh --data-only` wipes it and the node resyncs from peers. The libp2p identity is regenerated on every start (upstream behaviour). For a stable peer ID, set `alert_p2p_private_key` in `.env` to a hex-encoded Ed25519 private key.
+Discovery needs at least one reachable alert peer on the topic. Most nodes on the topic are outbound-only like this one, so a node may sit at `Running peer discovery` until a reachable peer accepts it. The container stays healthy meanwhile, and the rest of the node is unaffected.
 
-**Check it.** `./logs.sh alert`. Healthy output shows `successfully synced up to sequence N` and `subscribed to bitcoin_alert_system[_testnet] topic`. The topic subscription waits until peer discovery has synced with peers, which can take a few minutes. Alerts that act on UTXOs or blocks the node hasn't synced yet are stored unprocessed and retried every 5 minutes.
+**State.** Alert history lives in `alert.db` on the `teranode-data` volume (`/app/data/alert.db`); `./clean.sh --data-only` wipes it and the node resyncs from peers. The libp2p peer ID changes on every start: go-alert-system regenerates its key file each time. Because the node advertises no address, old IDs don't linger as dead entries in peer discovery. For a stable ID anyway, set `alert_p2p_private_key` in `.env` to 128 hex characters: the 64-byte Ed25519 private key (32-byte seed followed by the 32-byte public key). OpenSSL 1.1.1 or newer can make one; macOS's LibreSSL can't, so run it in the Teranode image there:
+
+```bash
+docker run --rm --entrypoint sh "ghcr.io/bsv-blockchain/teranode:$(grep -m1 '^TERANODE_VERSION=' .env | cut -d= -f2)" -c \
+  'k=$(openssl genpkey -algorithm ed25519); printf "%s\n" "$k" | openssl pkey -outform DER | tail -c 32 | xxd -p -c 64 | tr -d "\n"; printf "%s\n" "$k" | openssl pkey -pubout -outform DER | tail -c 32 | xxd -p -c 64'
+```
+
+**Check it.** `./status.sh` reports whether the alert service has joined the topic in its current run. `./logs.sh alert` shows the detail: `successfully synced up to sequence N` and `subscribed to bitcoin_alert_system[_testnet] topic`. The service subscribes to the topic only after it has synced with peers, typically 1-3 minutes after start. Alerts that act on UTXOs or blocks the node hasn't synced yet are stored unprocessed and retried every 5 minutes.
 
 **Turn it off.** Remove `alert` from `COMPOSE_PROFILES` in `.env`, then `./stop.sh && ./start.sh`.
 

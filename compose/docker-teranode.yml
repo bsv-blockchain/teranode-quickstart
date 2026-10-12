@@ -206,8 +206,9 @@ services:
 
   # BSV Alert System: joins the alert network over libp2p (public IPFS DHT,
   # client mode) and applies signed alerts (UTXO freezes, block invalidation,
-  # peer bans). Outbound-only: port 9908 is not published. Alert history
-  # lives in /app/data/alert.db on teranode-data.
+  # peer bans). Outbound-only: port 9908 is not published and no address is
+  # advertised (see extra_hosts). Alert history lives in /app/data/alert.db
+  # on teranode-data.
   alert:
     <<: *teranode-base
     container_name: alert
@@ -220,6 +221,13 @@ services:
     env_file:
       - ../config/alert/${network:-mainnet}.env
       - ../.env
+    # go-alert-system asks https://ifconfig.me/ip for a public address on
+    # every libp2p address lookup when the container has none, and leaks a
+    # TLS connection per request: about 1,500 open sockets and 2-3 requests/s
+    # at steady state. The node is outbound-only, so there is nothing to
+    # advertise: fail the lookup locally. Remove this if you publish 9908.
+    extra_hosts:
+      - "ifconfig.me:127.0.0.1"
     depends_on:
       blockchain:
         condition: service_healthy
