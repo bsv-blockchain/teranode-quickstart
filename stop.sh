@@ -26,11 +26,11 @@ fi
 
 echo_info "docker compose down (all profiles)..."
 # Include all known profiles so services like `seeder`, `peer`, `legacy`,
-# `monitoring`, `blockpersister`, `asset-cache` are taken down regardless
+# `alert`, `monitoring`, `blockpersister`, `asset-cache` are taken down regardless
 # of which profile the last `up` used. Otherwise their containers leak
 # and leave phantom endpoints in the project network, breaking the next
 # `up` with "endpoint with name X already exists in network".
-COMPOSE_PROFILES="seeding,p2p,legacy,monitoring,blockpersister" \
+COMPOSE_PROFILES="seeding,p2p,legacy,alert,monitoring,blockpersister" \
     docker compose down --remove-orphans
 
 echo_success "Stack stopped. Data volumes preserved. Run ./clean.sh to wipe them."

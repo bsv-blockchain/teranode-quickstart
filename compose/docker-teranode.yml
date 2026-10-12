@@ -204,6 +204,35 @@ services:
       start_period: 7s
     restart: on-failure
 
+  # BSV Alert System: joins the alert network over libp2p (public IPFS DHT,
+  # client mode) and applies signed alerts (UTXO freezes, block invalidation,
+  # peer bans). Outbound-only: port 9908 is not published. Alert history
+  # lives in /app/data/alert.db on teranode-data.
+  alert:
+    <<: *teranode-base
+    container_name: alert
+    mem_limit: ${MEM_LIMIT_ALERT:-0}
+    entrypoint: ["/app/entrypoint.sh"]
+    command: ["-alert=1"]
+    # Teranode ships the mainnet alert genesis keys and protocol ID for every
+    # network. config/alert/<network>.env supplies the right ones per network;
+    # .env comes last so a value set there wins.
+    env_file:
+      - ../config/alert/${network:-mainnet}.env
+      - ../.env
+    depends_on:
+      blockchain:
+        condition: service_healthy
+      blockassembly:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
+      interval: 5s
+      timeout: 30s
+      retries: 10
+      start_period: 7s
+    restart: on-failure
+
   blockpersister:
     <<: *teranode-base
     container_name: blockpersister
