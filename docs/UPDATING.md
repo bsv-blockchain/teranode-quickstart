@@ -59,6 +59,20 @@ nothing writes underneath the rewind.
 The subcommand ships in v0.15.8 and later, so run it on the upgraded image, not
 the old one.
 
+## Postgres role privileges
+
+Teranode's `teranode` Postgres role owns its database and needs no superuser
+rights. New installs create it `NOSUPERUSER`; installs set up before that keep
+a superuser role, because the `postgres` image runs `init.sql` only on an empty
+data volume. `./update.sh`, `./start.sh` and `git pull` do not change it.
+Remediate once, as the `postgres` superuser (Teranode can stay running):
+
+```bash
+docker exec -i postgres psql -U postgres -c 'ALTER ROLE teranode NOSUPERUSER;'
+docker exec -i postgres psql -U postgres -tAc \
+  "SELECT rolname, rolsuper FROM pg_roles WHERE rolname = 'teranode';"   # expect teranode|f
+```
+
 ## Alert rules (maintainers)
 
 `config/blockassembly.rules.yml` and `config/blockassembly.rules_test.yml` are
