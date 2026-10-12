@@ -16,11 +16,18 @@ x-teranode-base:
 # Teranode derives GOMEMLIMIT from the cgroup limit, so a capped service GCs
 # instead of ballooning — and a runaway service OOM-restarts instead of
 # starving Aerospike/Postgres on the host. 0 / unset = unlimited.
+#
+# stop_grace_period: on SIGTERM Teranode gives each internal service up to 30s
+# (service_manager_stopTimeout) to flush Kafka producers and drain batchers.
+# Compose's 10s default would SIGKILL it mid-flush. 60s matches teranode's own
+# compose (bsv-blockchain/teranode#1127). Not on seeder: it idles in `sleep`,
+# which ignores SIGTERM, so it would only make ./stop.sh wait longer.
 
 services:
   blockchain:
     <<: *teranode-base
     container_name: blockchain
+    stop_grace_period: 60s
     mem_limit: ${MEM_LIMIT_BLOCKCHAIN:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-blockchain=1"]
@@ -42,6 +49,7 @@ services:
   asset:
     <<: *teranode-base
     container_name: asset
+    stop_grace_period: 60s
     mem_limit: ${MEM_LIMIT_ASSET:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-asset=1"]
@@ -61,6 +69,7 @@ services:
   legacy:
     <<: *teranode-base
     container_name: legacy
+    stop_grace_period: 60s
     mem_limit: ${MEM_LIMIT_LEGACY:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-legacy=1"]
@@ -78,6 +87,7 @@ services:
   subtreevalidation:
     <<: *teranode-base
     container_name: subtreevalidation
+    stop_grace_period: 60s
     mem_limit: ${MEM_LIMIT_SUBTREEVALIDATION:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-subtreevalidation=1"]
@@ -95,6 +105,7 @@ services:
   blockvalidation:
     <<: *teranode-base
     container_name: blockvalidation
+    stop_grace_period: 60s
     mem_limit: ${MEM_LIMIT_BLOCKVALIDATION:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-blockvalidation=1"]
@@ -112,6 +123,7 @@ services:
   blockassembly:
     <<: *teranode-base
     container_name: blockassembly
+    stop_grace_period: 60s
     mem_limit: ${MEM_LIMIT_BLOCKASSEMBLY:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-blockassembly=1"]
@@ -129,6 +141,7 @@ services:
   propagation:
     <<: *teranode-base
     container_name: propagation
+    stop_grace_period: 60s
     mem_limit: ${MEM_LIMIT_PROPAGATION:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-propagation=1"]
@@ -152,6 +165,7 @@ services:
   peer:
     <<: *teranode-base
     container_name: peer
+    stop_grace_period: 60s
     mem_limit: ${MEM_LIMIT_PEER:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-p2p=1"]
@@ -171,6 +185,7 @@ services:
   rpc:
     <<: *teranode-base
     container_name: rpc
+    stop_grace_period: 60s
     mem_limit: ${MEM_LIMIT_RPC:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-rpc=1"]
@@ -190,6 +205,7 @@ services:
   pruner:
     <<: *teranode-base
     container_name: pruner
+    stop_grace_period: 60s
     mem_limit: ${MEM_LIMIT_PRUNER:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-pruner=1"]
@@ -207,6 +223,7 @@ services:
   blockpersister:
     <<: *teranode-base
     container_name: blockpersister
+    stop_grace_period: 60s
     mem_limit: ${MEM_LIMIT_BLOCKPERSISTER:-0}
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-blockpersister=1"]
