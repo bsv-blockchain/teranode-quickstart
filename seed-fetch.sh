@@ -3,9 +3,12 @@
 #
 # Lists the public bsva-teranode-seeds object storage bucket under
 # <network>-teranode/, picks the newest height directory whose snapshot_date.txt
-# completion marker exists, downloads the .utxo-headers + .utxo-set files (and
-# their .sha256 companions) into seed-cache/<network>-teranode/<height>/, and
-# verifies checksums. The bucket is read anonymously; no credentials needed.
+# completion marker exists, and downloads the .utxo-headers + .utxo-set files
+# and their .sha256 sidecars into seed-cache/<network>-teranode/<height>/.
+# It does not hash the files: the Teranode seeder that ./seed.sh runs verifies
+# each one against its sidecar before importing, so this script only checks
+# that the sidecars arrived. The bucket is read anonymously; no credentials
+# needed.
 #
 # Writes seed-cache/.last-fetch.env so seed.sh can pick up FETCHED_HASH +
 # FETCHED_DIR. Also prints the next-step ./seed.sh command on success.
@@ -130,34 +133,24 @@ get_snapshot_hash() {
     return 1
 }
 
-verify_sha256() {
-    local dir="$1"
-    local sha_tool
-    if command -v sha256sum >/dev/null 2>&1; then
-        sha_tool="sha256sum"
-    elif command -v shasum >/dev/null 2>&1; then
-        sha_tool="shasum -a 256"
-    else
-        echo_error "No sha256 tool (sha256sum or shasum) found — cannot verify snapshot integrity."
-        return 1
-    fi
-    (
-        cd "$dir" || exit 1
-        local found=0
-        for f in *.sha256; do
-            [ -f "$f" ] || continue
-            found=1
-            echo_info "Verifying $(basename "$f" .sha256) ..."
-            if ! $sha_tool -c "$f" >/dev/null; then
-                echo_error "Checksum mismatch for $f"
-                exit 1
-            fi
-        done
-        if [ "$found" -eq 0 ]; then
-            echo_error "No .sha256 files found in $dir — refusing to proceed without verification."
-            exit 1
+require_sidecars() {
+    # The seeder verifies each snapshot file against <file>.sha256 before
+    # importing, but a missing sidecar only gets a warning and the file is
+    # imported unverified. So both files and both sidecars must be here.
+    # rclone exits 0 when --include matches nothing, so check the files too.
+    # Runs before .last-fetch.env is written, so seed.sh never picks up a
+    # directory that failed this check.
+    local dir="$1" hash="$2" f missing=0
+    for f in "${dir}/${hash}.utxo-headers" "${dir}/${hash}.utxo-set"; do
+        if [ ! -f "$f" ]; then
+            echo_error "Missing $(basename "$f") in ${dir}"
+            missing=1
+        elif [ ! -f "${f}.sha256" ]; then
+            echo_error "Missing $(basename "$f").sha256 in ${dir}; the seeder would import $(basename "$f") unverified."
+            missing=1
         fi
-    )
+    done
+    return "$missing"
 }
 
 ensure_rclone || exit 1
@@ -216,8 +209,8 @@ if ! rclone copy "$SNAPSHOT_PATH" "$SEED_DATA" \
     exit 1
 fi
 
-echo_info "Verifying checksums ..."
-verify_sha256 "$SEED_DATA" || exit 1
+echo_info "Checking .sha256 sidecars ..."
+require_sidecars "$SEED_DATA" "$HASH" || exit 1
 
 # Persist for seed.sh to pick up automatically. Use printf %q so values
 # with shell-special characters (spaces in REPO_ROOT, etc.) round-trip safely.
