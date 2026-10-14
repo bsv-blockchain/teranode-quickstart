@@ -106,9 +106,10 @@ echo_cyan "research. Costs significant disk (multiple TB on mainnet)."
 if yes_no "Enable archival mode?" N; then ARCHIVAL=true; else ARCHIVAL=false; fi
 echo ""
 
-echo_cyan "Monitoring stack: Grafana dashboards, Prometheus, Aerospike exporter, and"
-echo_cyan "the Kafka (Redpanda) console. Optional — handy for visibility while syncing"
-echo_cyan "and tuning, but not required to run a node. Adds ~4 containers and ~1GB RAM."
+echo_cyan "Monitoring stack: Grafana dashboards, Prometheus with block-assembly alert"
+echo_cyan "rules, Alertmanager, Aerospike exporter, and the Kafka (Redpanda) console."
+echo_cyan "Optional — handy for visibility while syncing and tuning, but not required"
+echo_cyan "to run a node. Adds ~5 containers and ~1GB RAM."
 if yes_no "Enable monitoring stack?" Y; then MONITORING=true; else MONITORING=false; fi
 echo ""
 
@@ -170,8 +171,8 @@ echo_cyan "Host IP binding — controls ONLY these 3 ports:"
 echo "   8090  asset viewer UI                  (always on)"
 echo "   8000  asset-cache public API           (p2p profile only)"
 echo "   9905  P2P inbound peer connections     (p2p profile only)"
-echo_cyan "Everything else (RPC, Grafana, Prometheus, Kafka, Postgres, Aerospike) stays"
-echo_cyan "hardcoded to 127.0.0.1 regardless. Options:"
+echo_cyan "Everything else (RPC, Grafana, Prometheus, Alertmanager, Kafka, Postgres,"
+echo_cyan "Aerospike) stays hardcoded to 127.0.0.1 regardless. Options:"
 echo "   127.0.0.1  localhost only (safe default, works behind NAT)"
 echo "   0.0.0.0    all interfaces (needed when another host / reverse proxy needs to reach these)"
 HOST_IP=$(prompt "Host IP" "127.0.0.1")

@@ -59,6 +59,43 @@ nothing writes underneath the rewind.
 The subcommand ships in v0.15.8 and later, so run it on the upgraded image, not
 the old one.
 
+## Postgres role privileges
+
+Teranode's `teranode` Postgres role owns its database and needs no superuser
+rights. New installs create it `NOSUPERUSER`; installs set up before that keep
+a superuser role, because the `postgres` image runs `init.sql` only on an empty
+data volume. `./update.sh`, `./start.sh` and `git pull` do not change it.
+Remediate once, as the `postgres` superuser (Teranode can stay running):
+
+```bash
+docker exec -i postgres psql -U postgres -c 'ALTER ROLE teranode NOSUPERUSER;'
+docker exec -i postgres psql -U postgres -tAc \
+  "SELECT rolname, rolsuper FROM pg_roles WHERE rolname = 'teranode';"   # expect teranode|f
+```
+
+## Alert rules (maintainers)
+
+`config/blockassembly.rules.yml` and `config/blockassembly.rules_test.yml` are
+byte-identical copies of `deploy/docker/base/` in bsv-blockchain/teranode. When
+bumping the default `TERANODE_VERSION` in `.env.example`, check them against the
+new tag:
+
+```bash
+tag=v0.16.0
+for f in blockassembly.rules.yml blockassembly.rules_test.yml; do
+  curl -fsSL "https://raw.githubusercontent.com/bsv-blockchain/teranode/$tag/deploy/docker/base/$f" \
+    | cmp - "config/$f" && echo "$f: in sync"
+done
+```
+
+On a difference, copy teranode's files over ours unchanged, then run the rule
+unit tests (the test file's own header gives teranode's paths):
+
+```bash
+docker run --rm --entrypoint promtool -v "$PWD/config:/w:ro" -w /w \
+  prom/prometheus:v2.44.0 test rules blockassembly.rules_test.yml
+```
+
 ## Why `.env`?
 
 It's git-ignored. Your version pin is a local install decision — it shouldn't create diffs in tracked files on every update or conflict on `git pull`.
