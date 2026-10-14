@@ -186,7 +186,7 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 | `./update.sh`    | Check GitHub for a newer Teranode release; bump `.env`; pull; restart. See below. |
 | `./cli.sh …`     | Run `teranode-cli` inside the blockchain container (FSM state, seeder, admin). Ex: `./cli.sh getfsmstate` |
 | `./rpc.sh …`     | Call JSON-RPC at localhost:9292 (chain queries, TX submission). Ex: `./rpc.sh getblockcount` |
-| `./seed-fetch.sh`| Download the latest BSVA-hosted snapshot (auto-discovers the newest completed height, rsyncs UTXO files into `seed-cache/`, verifies sha256). Works for mainnet, testnet, and teratestnet. |
+| `./seed-fetch.sh`| Download the latest BSVA-hosted snapshot (auto-discovers the newest completed height, downloads the UTXO files and their `.sha256` sidecars into `seed-cache/`). Works for mainnet, testnet, and teratestnet. |
 | `./seed.sh`      | Seed UTXO state. Args: `<block-hash> <local-seed-dir>`. With no args, prompts to fetch a BSVA-hosted snapshot. |
 | `./status.sh`    | `docker compose ps` + FSM state + block count.              |
 | `./logs.sh [svc]`| Tail logs for a service or all services.                    |
@@ -347,7 +347,7 @@ The UTXO snapshots available at <https://bsva-teranode-seeds.s3.gra.io.cloud.ovh
 **For enhanced security:**
 - Create and maintain your own snapshots from genesis-validated nodes
 - Monitor synchronization status and network consensus alignment
-- The `.sha256` companions next to every snapshot file are checked automatically by `./seed-fetch.sh` — keep this verification step in any custom workflow
+- Since Teranode v0.16 the seeder verifies every snapshot file against its `.sha256` sidecar before importing. A mismatch aborts the seed; a missing sidecar only logs a warning and the file is imported unverified. `./seed-fetch.sh` refuses a download that lacks the sidecars; in a custom seed directory, keep the `.sha256` files next to the snapshot files
 
 **Validation**: Teranode automatically validates loaded snapshot data on startup, verifying block headers, chain integrity, and the UTXO set. The network consensus mechanism provides ongoing protection against invalid data.
 
