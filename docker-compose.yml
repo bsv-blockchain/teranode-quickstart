@@ -68,6 +68,13 @@ services:
       file: ./compose/docker-teranode.yml
       service: pruner
 
+  alert:
+    extends:
+      file: ./compose/docker-teranode.yml
+      service: alert
+    profiles:
+      - alert
+
   blockpersister:
     extends:
       file: ./compose/docker-teranode.yml

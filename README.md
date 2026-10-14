@@ -36,6 +36,7 @@ Running `./setup.sh && ./start.sh` stands up:
 | Grafana                | Dashboards (Teranode + Aerospike)         | http://localhost:3005 |
 | Kafka Console          | Topic viewer with protobuf decoding       | http://localhost:8080 |
 | Nginx asset cache      | Caching reverse proxy for asset API       | 127.0.0.1:8000        |
+| Alert System           | BSV network alerts (mainnet + testnet)    | none (outbound only)  |
 
 All services are internal by default. `HOST_IP` in `.env` controls binding for **only these 3 ports**:
 
@@ -131,7 +132,7 @@ Two zones live in `.env`:
 - `HOST_IP` — bind address for externally-exposed ports
 - `SETTINGS_CONTEXT`
 - `MEM_LIMIT_<SERVICE>` — per-service container memory caps, written by `./setup.sh` scaled to host RAM (see `lib/mem_limits.sh`). Teranode derives its Go GC memory limit (GOMEMLIMIT) from each cap, so a capped service garbage-collects instead of ballooning past host RAM
-- `COMPOSE_PROFILES` — comma-separated list of optional services to run (`legacy`, `p2p`, `blockpersister`, `seeding`). Read directly by `docker compose`, so bare `docker compose up -d` honours it
+- `COMPOSE_PROFILES` — comma-separated list of optional services to run (`legacy`, `p2p`, `alert`, `blockpersister`, `monitoring`, `seeding`). Read directly by `docker compose`, so bare `docker compose up -d` honours it
 - `POSTGRES_PASSWORD`
 
 **Teranode settings** (lowercase / camelCase, matching upstream `settings.conf`) — passed straight into the Teranode containers via `env_file: .env`:
@@ -143,6 +144,8 @@ Two zones live in `.env`:
 - `asset_httpPublicAddress`, `p2p_advertise_addresses` — only needed for full mode
 - `minminingtxfee`, `blockmaxsize`, `excessiveblocksize` — per-network consensus knobs
 - `logLevel`, `p2p_dht_mode`, `p2p_health_check_enabled`
+
+Per-network Alert System settings (genesis keys, protocol ID) are not in `.env`: they are network facts, so they ship in `config/alert/<network>.env`, which only the `alert` service reads, ahead of `.env`. Set the same key in `.env` to override.
 
 `setup.sh` writes sensible defaults; edit any of these directly if you need to. There is no rename or translation layer — the key in `.env` is the same key Teranode reads. `SETTINGS_CONTEXT=docker.m` picks up upstream defaults from the image's built-in `settings.conf`; env vars override the keys you care about.
 
@@ -159,6 +162,40 @@ Two zones live in `.env`:
 Only switch to `server` if you know what you're doing. Most operators should leave this alone.
 
 > **Warning:** `server` mode probes 100+ peers to build its routing table. Some providers (Hetzner, OVH, and similar abuse-sensitive hosts) flag this as port scanning and may issue abuse reports or suspend your server. Use `off` or `client` on those networks unless you've cleared it with the provider.
+
+`p2p_dht_mode` covers the Teranode P2P service only. The Alert System uses the public IPFS DHT in client mode and has no `off` setting; see [Alert System](#alert-system).
+
+## Alert System
+
+The `alert` service runs Teranode's Alert System (`teranode.run -alert=1`). It joins the BSV alert network over libp2p, syncs the alert history from peers, and applies validly signed alerts to this node: informational messages, UTXO freeze / unfreeze, confiscation-transaction whitelisting, block invalidation, peer ban / unban, and alert-key rotation. An alert counts only with signatures from 3 of the 5 alert key holders.
+
+**On by default for mainnet and testnet** (`alert` in `COMPOSE_PROFILES`). teratestnet and regtest have no alert network, so `setup.sh` leaves it off there. `./start.sh` warns when it is off on mainnet or testnet.
+
+Why it is on: the BSV Association's [SV Node v1.1.0 release notes](https://github.com/bitcoin-sv/bitcoin-sv/releases/tag/v1.1.0) state that node operators are required to run the Alert System, and that operators who don't risk being banned and/or having their blocks rejected by those who do. Under the [Network Access Rules](https://nar.bsvblockchain.org/frequently-asked-questions/faq-for-miners), mining nodes enforce the rules by implementing directives received through the Alert System. Those statements were written for SV Node; the alert network and its directives are the same for Teranode.
+
+| Network | Topic                          | Protocol ID                           | Genesis keys                |
+|---------|--------------------------------|---------------------------------------|-----------------------------|
+| mainnet | `bitcoin_alert_system`         | `/bitcoin/alert-system/1.0.0`         | Teranode built-in           |
+| testnet | `bitcoin_alert_system_testnet` | `/bitcoin-testnet/alert-system/0.0.1` | `config/alert/testnet.env`  |
+
+Teranode ships the mainnet protocol ID and genesis keys for every network, so on testnet `config/alert/testnet.env` supplies the testnet values (from go-alert-system [`app/config/envs/testnet.json`](https://github.com/bsv-blockchain/go-alert-system/blob/v0.1.17/app/config/envs/testnet.json), the library Teranode embeds). Without them a testnet node cannot sync alert history from testnet peers or verify testnet alerts.
+
+**Network.** Alert peers are found through the public IPFS DHT in client mode: the service dials the IPFS bootstrap nodes, then looks up peers on the alert topic. Dialing private address ranges is blocked. This is the traffic `p2p_dht_mode=off` avoids for the P2P service, and the Alert System has no equivalent switch. On abuse-sensitive hosts (Hetzner, OVH) clear it with your provider, or drop `alert` from `COMPOSE_PROFILES`.
+
+The node is outbound-only. Port 9908 is not published, and no address is advertised. Outbound connections are enough to sync history and receive alerts. With no public address on its interfaces, go-alert-system would otherwise ask `https://ifconfig.me/ip` on every libp2p address lookup and leak a TLS connection per request: about 1,500 open sockets and 2-3 requests/s at steady state. Advertising that address only gives other alert nodes an unreachable entry to dial. `compose/docker-teranode.yml` therefore points `ifconfig.me` at `127.0.0.1` for the alert container (`extra_hosts`). To accept inbound alert peers instead, add `ports: ["9908:9908"]` to the `alert` service, open 9908/tcp, and remove the `extra_hosts` entry so the node can advertise its public IP. Keep the host port at 9908, and expect the connection leak back. `HOST_IP` does not cover this port.
+
+Discovery needs at least one reachable alert peer on the topic. Most nodes on the topic are outbound-only like this one, so a node may sit at `Running peer discovery` until a reachable peer accepts it. The container stays healthy meanwhile, and the rest of the node is unaffected.
+
+**State.** Alert history lives in `alert.db` on the `teranode-data` volume (`/app/data/alert.db`); `./clean.sh --data-only` wipes it and the node resyncs from peers. The libp2p peer ID changes on every start: go-alert-system regenerates its key file each time. Because the node advertises no address, old IDs don't linger as dead entries in peer discovery. For a stable ID anyway, set `alert_p2p_private_key` in `.env` to 128 hex characters: the 64-byte Ed25519 private key (32-byte seed followed by the 32-byte public key). OpenSSL 1.1.1 or newer can make one; macOS's LibreSSL can't, so run it in the Teranode image there:
+
+```bash
+docker run --rm --entrypoint sh "ghcr.io/bsv-blockchain/teranode:$(grep -m1 '^TERANODE_VERSION=' .env | cut -d= -f2)" -c \
+  'k=$(openssl genpkey -algorithm ed25519); printf "%s\n" "$k" | openssl pkey -outform DER | tail -c 32 | xxd -p -c 64 | tr -d "\n"; printf "%s\n" "$k" | openssl pkey -pubout -outform DER | tail -c 32 | xxd -p -c 64'
+```
+
+**Check it.** `./status.sh` reports whether the alert service has joined the topic in its current run. `./logs.sh alert` shows the detail: `successfully synced up to sequence N` and `subscribed to bitcoin_alert_system[_testnet] topic`. The service subscribes to the topic only after it has synced with peers, typically 1-3 minutes after start. Alerts that act on UTXOs or blocks the node hasn't synced yet are stored unprocessed and retried every 5 minutes.
+
+**Turn it off.** Remove `alert` from `COMPOSE_PROFILES` in `.env`, then `./stop.sh && ./start.sh`.
 
 ## Listen-only vs full mode
 
@@ -259,6 +296,7 @@ teranode-quickstart/
 │   └── docker-services.yml        # postgres, kafka, aerospike, monitoring, asset-cache
 ├── config/
 │   ├── aerospike.conf
+│   ├── alert/<network>.env        # per-network Alert System settings
 │   ├── prometheus.yml / grafana_datasource.yaml / grafana_dashboards/
 │   ├── kafka-console-config.yml / protos/
 │   ├── asset-cache-nginx.conf

@@ -34,6 +34,19 @@ fi
 
 NETWORK="${network:?network not set in .env}"
 
+# .env files written before the Alert System was added lack the profile.
+case "$NETWORK" in
+    mainnet|testnet)
+        case ",${COMPOSE_PROFILES:-}," in
+            *,alert,*) ;;
+            *)
+                echo_warning "Alert System is off: 'alert' is not in COMPOSE_PROFILES. This node will not apply BSV network alerts (UTXO freezes, block invalidations, peer bans)."
+                echo_warning "Fix: add alert to COMPOSE_PROFILES in .env (or re-run ./setup.sh). See README \"Alert System\"."
+                ;;
+        esac
+        ;;
+esac
+
 # Backfill for .env files written before Teranode required the key. Every
 # Teranode service reads it from .env, so this runs before compose up. Not
 # fatal: releases before the requirement still start without it.

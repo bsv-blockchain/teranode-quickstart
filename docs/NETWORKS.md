@@ -11,12 +11,22 @@ Per-network values written by `setup.sh` into `.env`:
 
 `p2p_dht_mode = off` for all networks (see README § DHT mode).
 
+Alert System (`alert` in `COMPOSE_PROFILES`, see README § Alert System):
+
+| Network     | Default | Alert topic                    | Settings                                   |
+|-------------|---------|--------------------------------|--------------------------------------------|
+| mainnet     | on      | `bitcoin_alert_system`         | Teranode built-in                          |
+| testnet     | on      | `bitcoin_alert_system_testnet` | `config/alert/testnet.env` (keys + protocol ID) |
+| teratestnet | off     | none published                 | —                                          |
+| regtest     | off     | none (local only)              | —                                          |
+
 ## mainnet
 
 Real BSV mainnet.
 
 - **Budget 256 GB RAM, 2 TB+ SSD, 16+ cores.** 128 GB is the floor; below that you OOM during sync.
 - Full mode is the point — listen-only mainnet is mostly a curiosity. Set `listen_mode=full` and add `p2p` to `COMPOSE_PROFILES`.
+- Keep the Alert System on. BSVA requires node operators to run it, and mining nodes enforce the Network Access Rules through its directives (README § Alert System).
 
 ## testnet
 
@@ -24,6 +34,7 @@ Standard BSV testnet. Good for realistic integration testing.
 
 - 32 GB RAM recommended (16 GB minimum), 300 GB SSD, 8+ cores.
 - Distinct from **teratestnet** (below).
+- Alert System on by default, with the testnet alert keys and protocol ID from `config/alert/testnet.env`.
 
 ## teratestnet
 
@@ -32,6 +43,7 @@ Shared Teranode test network run by the BSV Association. A published UTXO snapsh
 - 32 GB RAM recommended, 100 GB SSD, 8+ cores.
 - Block sizes capped at 1 GiB so the shared network stays approachable.
 - No DNS seeder — bootstrap via `legacy_config_ConnectPeers=57.130.17.176:38333` (see `.env.example`).
+- No alert network is published for teratestnet, so the Alert System stays off.
 - BSVA hosts snapshots in the public OVHcloud S3-compatible bucket at
   <https://bsva-teranode-seeds.s3.gra.io.cloud.ovh.net/>, under `teratestnet-teranode/<height>/`.
   Seed with: `./seed.sh` (prompts to fetch the latest completed height).

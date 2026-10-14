@@ -204,6 +204,43 @@ services:
       start_period: 7s
     restart: on-failure
 
+  # BSV Alert System: joins the alert network over libp2p (public IPFS DHT,
+  # client mode) and applies signed alerts (UTXO freezes, block invalidation,
+  # peer bans). Outbound-only: port 9908 is not published and no address is
+  # advertised (see extra_hosts). Alert history lives in /app/data/alert.db
+  # on teranode-data.
+  alert:
+    <<: *teranode-base
+    container_name: alert
+    mem_limit: ${MEM_LIMIT_ALERT:-0}
+    entrypoint: ["/app/entrypoint.sh"]
+    command: ["-alert=1"]
+    # Teranode ships the mainnet alert genesis keys and protocol ID for every
+    # network. config/alert/<network>.env supplies the right ones per network;
+    # .env comes last so a value set there wins.
+    env_file:
+      - ../config/alert/${network:-mainnet}.env
+      - ../.env
+    # go-alert-system asks https://ifconfig.me/ip for a public address on
+    # every libp2p address lookup when the container has none, and leaks a
+    # TLS connection per request: about 1,500 open sockets and 2-3 requests/s
+    # at steady state. The node is outbound-only, so there is nothing to
+    # advertise: fail the lookup locally. Remove this if you publish 9908.
+    extra_hosts:
+      - "ifconfig.me:127.0.0.1"
+    depends_on:
+      blockchain:
+        condition: service_healthy
+      blockassembly:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null --tries=1 --timeout=5 http://localhost:8000/health || [ $? = 8 ]"]
+      interval: 5s
+      timeout: 30s
+      retries: 10
+      start_period: 7s
+    restart: on-failure
+
   blockpersister:
     <<: *teranode-base
     container_name: blockpersister

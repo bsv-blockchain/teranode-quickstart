@@ -63,12 +63,12 @@ fi
 
 if [ "$MODE" = "all" ] || [ "$MODE" = "data" ]; then
     # Run `compose down` with all known profiles so services like `seeder`,
-    # `peer`, `legacy`, `monitoring`, `blockpersister`, `asset-cache` are
-    # included. Otherwise their containers leak and leave phantom endpoints
+    # `peer`, `legacy`, `alert`, `monitoring`, `blockpersister`, `asset-cache`
+    # are included. Otherwise their containers leak and leave phantom endpoints
     # in the project network, breaking the next `compose up` with
     # "endpoint with name X already exists in network".
     log "docker compose down -v (all profiles) ..."
-    COMPOSE_PROFILES="seeding,p2p,legacy,monitoring,blockpersister" \
+    COMPOSE_PROFILES="seeding,p2p,legacy,alert,monitoring,blockpersister" \
         compose down -v --remove-orphans 2>/dev/null || true
 
     # Belt-and-suspenders: force-remove any container still labelled for
