@@ -56,13 +56,6 @@ docker compose up -d
 echo ""
 "${REPO_ROOT}/lib/fsm.sh" up || echo_warning "FSM transition failed — see above. Try ./status.sh and ./cli.sh setfsmstate --fsmstate CATCHINGBLOCKS (RUNNING on v0.15.x) manually."
 
-# Raises batch-index-threads above the config floor on hosts with more than
-# 64 cores, and applies the floor to an aerospike container started before
-# config/aerospike.conf set it. Runs after the FSM step so a cold Aerospike
-# start mostly overlaps the blockchain health wait. See lib/aerospike.sh.
-source "${REPO_ROOT}/lib/aerospike.sh"
-apply_batch_index_threads_floor 120 || echo_warning "Check the running value later with ./status.sh."
-
 echo ""
 echo_success "Stack up. Useful URLs:"
 echo "  Asset viewer:   http://localhost:8090"
