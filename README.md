@@ -188,7 +188,7 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 | `./rpc.sh …`     | Call JSON-RPC at localhost:9292 (chain queries, TX submission). Ex: `./rpc.sh getblockcount` |
 | `./seed-fetch.sh`| Download the latest BSVA-hosted snapshot (auto-discovers the newest completed height, downloads the UTXO files and their `.sha256` sidecars into `seed-cache/`). Works for mainnet, testnet, and teratestnet. |
 | `./seed.sh`      | Seed UTXO state. Args: `<block-hash> <local-seed-dir>`. With no args, prompts to fetch a BSVA-hosted snapshot. |
-| `./status.sh`    | `docker compose ps` + FSM state + block count.              |
+| `./status.sh`    | `docker compose ps` + Aerospike batch-index stall check + FSM state + block count. |
 | `./logs.sh [svc]`| Tail logs for a service or all services.                    |
 | `./clean.sh`     | Remove volumes / config. See flags with `./clean.sh --help`.|
 
@@ -296,6 +296,7 @@ For remote RPC access: put an authenticated reverse proxy in front of 9292 on an
 - **`docker compose` fails with "services.blockchain refers to undefined volume teranode-data"** — you ran `docker compose` without this repo's root `docker-compose.yml`. Make sure you're in the repo root when invoking `start.sh`.
 - **FSM stuck in `IDLE`** — `./cli.sh setfsmstate --fsmstate CATCHINGBLOCKS` manually (`RUNNING` on v0.15.x, which has no `IDLE` → `CATCHINGBLOCKS` transition). `start.sh` does this once the blockchain container is healthy; rerun it if that step timed out. From `CATCHINGBLOCKS` the node moves to `RUNNING` on its own once catchup completes.
 - **Aerospike fails with "device full" / "out of space"** — UTXO has outgrown the 640 GB CE cap. See the Aerospike subsection in Prerequisites for capacity-expansion options.
+- **Sync stops advancing with `STORAGE_ERROR … error in aerospike map store batch records … MAX_RETRIES_EXCEEDED`** — Aerospike may have stopped completing batch reads. `./status.sh` warns when `batch_index_complete` does not move while requests sit in the batch queues and `batch_index_unused_buffers` is 0; other signs are `process_cpu_pct` at 0 and `client_connections` climbing far above the sockets the kernel shows on port 3000. Restarting the Teranode service that reports the error does not clear it. `docker restart aerospike` does: data persists on the volume, and startup can take a minute or more. `config/aerospike.conf` sets `batch-index-threads 64` because the stall was seen on a 16-core host running the default of one thread per core; the root cause is not yet confirmed.
 - **Grafana shows "No data"** — Prometheus needs ~1 minute to scrape the first datapoints. If still empty, check `http://localhost:9090/targets`.
 - **Port X already in use** — another process holds the port. `lsof -i :X` to find it. Edit `HOST_IP` or remap in `docker-compose.yml`.
 - **Mainnet sync stuck** — check the [upstream release notes](https://github.com/bsv-blockchain/teranode/releases) for known issues; if nothing fits, open an issue at the upstream repo.
