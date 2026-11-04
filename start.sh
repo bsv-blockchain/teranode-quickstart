@@ -32,6 +32,13 @@ elif [ "$HAS_PERSISTER" -eq 1 ] && [ "$TRIGGER" = "OnBlockMined" ]; then
     echo_warning "Pruner will not wait for archival. Consider pruner_block_trigger=OnBlockPersisted for coordinated pruning (or re-run ./setup.sh)."
 fi
 
+# compose/docker-teranode.yml pins GODEBUG=multipathtcp=0 (CVE-2026-98432),
+# which replaces any GODEBUG the operator set. Say so instead of dropping it
+# silently.
+if [ -n "${GODEBUG:-}" ] && [ "$GODEBUG" != "multipathtcp=0" ]; then
+    echo_warning "GODEBUG=${GODEBUG} is overridden: Teranode containers run with GODEBUG=multipathtcp=0 (see README, CVE-2026-98432)."
+fi
+
 NETWORK="${network:?network not set in .env}"
 
 # Backfill for .env files written before Teranode required the key. Every
