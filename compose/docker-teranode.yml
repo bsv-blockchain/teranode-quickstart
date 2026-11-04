@@ -9,8 +9,15 @@ x-teranode-base:
     - teranode-data:/app/data
   env_file:
     - ../.env
-  environment:
+  # A service that sets its own `environment:` replaces this map instead of
+  # merging with it, so it must merge the anchor back in (see blockchain).
+  environment: &teranode-env
     SETTINGS_CONTEXT: ${SETTINGS_CONTEXT:-docker.m}
+    # Interim mitigation for CVE-2026-98432: Go 1.24+ enables Multipath TCP on
+    # every listen socket by default; this turns it off. It does not replace a
+    # patched host kernel. This overrides any GODEBUG in .env; add other GODEBUG
+    # keys here, comma-separated. See README "Security: CVE-2026-98432".
+    GODEBUG: multipathtcp=0
 
 # Per-service MEM_LIMIT_* caps (written by setup.sh, see lib/mem_limits.sh).
 # Teranode derives GOMEMLIMIT from the cgroup limit, so a capped service GCs
@@ -25,6 +32,7 @@ services:
     entrypoint: ["/app/entrypoint.sh"]
     command: ["-blockchain=1"]
     environment:
+      <<: *teranode-env
       # Only blockchain waits on the data layer; downstream Teranode services
       # gate on `blockchain healthy` via depends_on, so by the time they start
       # aerospike + postgres + kafka are already ready.

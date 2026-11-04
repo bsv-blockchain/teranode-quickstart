@@ -174,6 +174,16 @@ After `start.sh` brings the stack up, `lib/reachability.sh` probes the declared 
 
 > **No tunnel helpers shipped.** This quickstart does not bundle ngrok or similar. Bring your own reverse proxy / public endpoint.
 
+## Security: CVE-2026-98432 (Multipath TCP)
+
+[CVE-2026-98432](https://ubuntu.com/security/CVE-2026-98432) is a use-after-free in the Linux kernel's IPv4 TCP handshake. Remote code execution was demonstrated against servers with a Multipath TCP (MPTCP) listener. Since Go 1.24, Go programs, Teranode included, open their Linux listen sockets as MPTCP by default.
+
+Every Teranode container therefore runs with `GODEBUG=multipathtcp=0` (set in `compose/docker-teranode.yml`), which makes Teranode listen on plain TCP. This is an interim mitigation, not a fix: the kernel bug is not limited to MPTCP, and the [Go security team](https://groups.google.com/g/golang-announce/c/PCoQcdxoScw) calls this setting a fragile mitigation. Containers share the host kernel, so the real fix is a patched host kernel; install it and reboot when your distribution ships one.
+
+Exposure is highest when `HOST_IP` publishes the asset (8090) and P2P (9905) ports beyond the host. The default `127.0.0.1` keeps them loopback-only.
+
+Existing installs pick the setting up with `git pull && ./start.sh`, which recreates the Teranode containers; `.env` needs no change. The compose value overrides any `GODEBUG` in `.env`; add other Go debug settings next to it in `compose/docker-teranode.yml`.
+
 ---
 
 ## Commands
