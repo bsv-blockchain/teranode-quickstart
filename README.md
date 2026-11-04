@@ -182,7 +182,7 @@ Every Teranode container therefore runs with `GODEBUG=multipathtcp=0` (set in `c
 
 Exposure is highest when `HOST_IP` publishes the asset (8090) and P2P (9905) ports beyond the host. The default `127.0.0.1` keeps them loopback-only.
 
-Existing installs pick the setting up with `git pull && ./start.sh`, which recreates the Teranode containers; `.env` needs no change. A `GODEBUG` you set in `.env` is kept, with `multipathtcp=0` appended last so it takes precedence.
+Existing installs pick the setting up with `git pull && ./start.sh`, which recreates the Teranode containers; `.env` needs no change. The compose value overrides any `GODEBUG` in `.env`; add other Go debug settings next to it in `compose/docker-teranode.yml`.
 
 ---
 
