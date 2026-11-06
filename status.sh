@@ -7,10 +7,17 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
 
 source "${REPO_ROOT}/lib/colors.sh"
+source "${REPO_ROOT}/lib/aerospike.sh"
 
 echo_green "=== Containers ==="
 docker compose ps
 echo ""
+
+if docker ps --format '{{.Names}}' | grep -q '^aerospike$'; then
+    echo_green "=== Aerospike batch-index ==="
+    check_batch_index_stall
+    echo ""
+fi
 
 if docker ps --format '{{.Names}}' | grep -q '^blockchain$'; then
     echo_green "=== FSM state ==="
