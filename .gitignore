@@ -1,6 +1,9 @@
 # User-owned state, never tracked
 .env
 .env.bak
+docker-compose.override.yml
+alertmanager.local.yml
+secrets/
 
 # Logs (persistence is via docker volumes, not host paths)
 logs/

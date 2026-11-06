@@ -1,0 +1,30 @@
+# Alertmanager config for the quickstart monitoring profile.
+#
+# Prometheus evaluates config/blockassembly.rules.yml and sends firing alerts
+# here. The default receiver deliberately has no notifier attached: shipping a
+# hard-coded Slack/PagerDuty/webhook target would either leak a secret or send
+# your alerts to someone else. Until you add one, firing alerts are visible in
+# the Alertmanager UI on http://localhost:9094 and in Prometheus on
+# http://localhost:9090/alerts.
+#
+# This file is tracked by git and made world-readable by lib/config_perms.sh,
+# so never put a webhook URL, token or password in it. Use the *_file variant
+# of the field and mount the secret file into the container; see README
+# "Alerting" for the steps. For example:
+#
+#   receivers:
+#     - name: default
+#       slack_configs:
+#         - api_url_file: /etc/alertmanager/secrets/slack_webhook_url
+#           channel: '#teranode-alerts'
+#           send_resolved: true
+#
+route:
+  receiver: default
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: default

@@ -2,6 +2,21 @@ global:
   scrape_interval: 30s
   evaluation_interval: 30s
 
+# blockassembly.rules.yml (and its unit tests, blockassembly.rules_test.yml) are
+# byte-identical copies of deploy/docker/base/ in bsv-blockchain/teranode, as of
+# teranode v0.16.0. Change them there, then copy them here; never edit them in
+# this repo. docs/UPDATING.md has the drift check to run on a version bump.
+rule_files:
+  - 'blockassembly.rules.yml'
+
+# Without this, alert rules are evaluated but firing alerts go nowhere except
+# the Prometheus UI. Alertmanager ships with no notifier configured (see
+# alertmanager.yml); README "Alerting" shows how to add one.
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
