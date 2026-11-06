@@ -112,7 +112,24 @@ echo_cyan "and tuning, but not required to run a node. Adds ~4 containers and ~1
 if yes_no "Enable monitoring stack?" Y; then MONITORING=true; else MONITORING=false; fi
 echo ""
 
+# The BSV alert network exists for mainnet and testnet only; teratestnet and
+# regtest have none to join.
+case "$NETWORK" in
+    mainnet|testnet)
+        echo_cyan "Alert System: receives BSV Association signed network alerts (UTXO freezes,"
+        echo_cyan "block invalidations, peer bans) and applies them to this node. BSVA expects"
+        echo_cyan "every node to process them; miners in particular. It finds alert peers over"
+        echo_cyan "the public IPFS DHT (client mode, outbound only) — see README \"Alert System\"."
+        if yes_no "Run the Alert System?" Y; then ALERT=true; else ALERT=false; fi
+        echo ""
+        ;;
+    *)
+        ALERT=false
+        ;;
+esac
+
 PROFILES="legacy,p2p"
+[ "$ALERT" = "true" ]      && PROFILES="${PROFILES},alert"
 [ "$ARCHIVAL" = "true" ]   && PROFILES="${PROFILES},blockpersister"
 [ "$MONITORING" = "true" ] && PROFILES="${PROFILES},monitoring"
 
@@ -182,6 +199,7 @@ echo "  Network:     $NETWORK"
 echo "  Mode:        $MODE"
 echo "  Archival:    $ARCHIVAL"
 echo "  Monitoring:  $MONITORING"
+echo "  Alert:       $ALERT"
 echo "  Client name: $CLIENT_NAME"
 [ -n "$ASSET_PUBLIC_URL" ]  && echo "  Asset URL:   $ASSET_PUBLIC_URL"
 [ -n "$P2P_ADVERTISE_ADDR" ] && echo "  P2P addr:    $P2P_ADVERTISE_ADDR"

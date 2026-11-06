@@ -33,7 +33,8 @@
 #   blockvalidation   — holds full blocks during validation/catchup
 #   blockassembly     — in-memory subtree assembly
 #   seeder            — bulk-loads the UTXO set (runs with the stack down)
-#   rpc / pruner      — thin coordinators
+#   rpc / pruner /
+#   alert             — thin coordinators
 MEM_LIMIT_TABLE="
 legacy:40
 subtreevalidation:20
@@ -47,6 +48,7 @@ blockpersister:10
 peer:10
 rpc:5
 pruner:5
+alert:5
 "
 
 # Floor so tiny (regtest) hosts don't produce caps too small for the Go
