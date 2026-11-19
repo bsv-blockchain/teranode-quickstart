@@ -236,7 +236,9 @@ The update flow:
 3. Prints current tag, target tag, and release URL.
 4. On confirm, writes the new tag back to `.env` (git-ignored → no tracked-file diff).
 5. Prints the next step: run `./start.sh` to pull the new image if needed and recreate containers whose image tag changed.
-6. `update.sh` never changes Docker state; rollout stays separate from changing the local version pin. Its one Docker call is a read-only check of the conflict WAL when you leave v0.16.0 (see [docs/UPDATING.md](docs/UPDATING.md#leaving-v0160)).
+6. `update.sh` never changes Docker state; rollout stays separate from changing the local version pin. Besides reading host memory from `docker info`, its only Docker call is a read-only check of the conflict WAL when you leave v0.16.0.
+
+Upgrading from v0.16.0: stop block assembly first (`docker stop blockassembly`, not `./stop.sh`). `update.sh` then checks the conflict WAL is empty and refuses if it isn't. See [docs/UPDATING.md](docs/UPDATING.md#upgrading-from-v0160).
 
 Upgrading from below v0.15.7 on testnet or teratestnet: if your node stopped advancing, see [docs/UPDATING.md](docs/UPDATING.md) for the `rewindblockchain` recovery path.
 
