@@ -50,6 +50,14 @@ if ! ensure_admin_api_key .env; then
     echo_warning "Newer Teranode releases will not start Blockchain without it. Fix: make .env writable and re-run, or add grpc_admin_api_key=<output of openssl rand -hex 32> to .env."
 fi
 
+# Same for rpc_user/rpc_pass: Teranode has no default RPC credentials and
+# rejects every JSON-RPC request without them. Fills only blank values.
+source "${REPO_ROOT}/lib/rpc_creds.sh"
+if ! ensure_rpc_credentials .env; then
+    echo_warning "Could not write rpc_user/rpc_pass to .env (not writable by $(id -un)?)."
+    echo_warning "Without them JSON-RPC rejects every request. Fix: make .env writable and re-run, or set both in .env."
+fi
+
 echo_info "Network: $NETWORK"
 [ -n "${COMPOSE_PROFILES:-}" ] && echo_info "Profiles: $COMPOSE_PROFILES"
 
