@@ -70,9 +70,8 @@ yes_no() {
     done
 }
 
-gen_secret() {
-    openssl rand -hex 16 2>/dev/null || head -c 32 /dev/urandom | xxd -p | head -c 32
-}
+# gen_secret: shared with start.sh's RPC credentials backfill.
+source "${REPO_ROOT}/lib/secret.sh"
 
 echo_green "=================================================="
 echo_green "  Teranode Quickstart — first-time setup"

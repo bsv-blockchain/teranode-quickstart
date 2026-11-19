@@ -22,6 +22,7 @@ cd "$REPO_ROOT"
 
 source "${REPO_ROOT}/lib/colors.sh"
 source "${REPO_ROOT}/lib/github_release.sh"
+source "${REPO_ROOT}/lib/conflict_wal.sh"
 
 if [ ! -f .env ]; then
     echo_error ".env not found. Run ./setup.sh first."
@@ -75,9 +76,27 @@ if versions_equal "$CURRENT" "$TARGET"; then
     exit 0
 fi
 
+LEAVES_V0160=0
+if leaves_v0160 "$CURRENT" "$TARGET"; then
+    LEAVES_V0160=1
+fi
+
 if [ "$CHECK" -eq 1 ]; then
+    if [ "$LEAVES_V0160" -eq 1 ]; then
+        echo_info "Leaving v0.16.0: the update will first check the conflict WAL is empty (block assembly stopped, Aerospike up)."
+    fi
     echo_info "--check: not modifying .env or pulling images."
     exit 0
+fi
+
+# Leaving v0.16.0 needs an empty conflict WAL, read with block assembly
+# stopped. This is update.sh's one Docker call, and it only reads. --yes
+# answers the prompt below; it does not skip this.
+if [ "$LEAVES_V0160" -eq 1 ]; then
+    echo_info "Leaving v0.16.0: checking the conflict WAL is empty..."
+    if ! check_conflict_wal; then
+        exit 1
+    fi
 fi
 
 if [ "$AUTO_YES" -ne 1 ]; then

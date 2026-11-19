@@ -15,7 +15,7 @@
 4. On confirm, `lib/env_writer.sh` rewrites only the `TERANODE_VERSION=` line in `.env`.
 5. Prints next-step hint: run `./start.sh` to pull the new image and recreate the changed Teranode services. Data volumes persist; A node stopped in `IDLE` is moved to `CATCHINGBLOCKS` (`RUNNING` on v0.15.x) and promotes itself to `RUNNING` once caught up; a persisted `CATCHINGBLOCKS` or `RUNNING` state is resumed as-is.
 
-`update.sh` itself never touches Docker — it only bumps `.env`. This keeps the version pin and the rollout as separate steps; you can `--check` or pin a tag without touching the running stack.
+`update.sh` never changes Docker state — it only bumps `.env`. This keeps the version pin and the rollout as separate steps; you can `--check` or pin a tag without touching the running stack. The exception is a read-only check of the conflict WAL when you leave v0.16.0; see [Upgrading from v0.16.0](#upgrading-from-v0160).
 
 ## Admin API key
 
@@ -27,25 +27,49 @@ never replaces a value you already set. If you rotate the key, run `./start.sh`
 so every service restarts with the new value; a service left on the old key
 fails its readiness check.
 
+## RPC credentials
+
+Teranode has no default RPC credentials: with `rpc_user`/`rpc_pass` blank,
+JSON-RPC rejects every request. `setup.sh` always writes both. `./start.sh`
+fills in either one when it is missing or blank, `rpc_user=teranode` and a
+random `rpc_pass`, and never replaces a value you set. Read the password from
+`.env`.
+
 ## Upgrading from v0.16.0
 
 Read [Before you upgrade](https://github.com/bsv-blockchain/teranode/releases/tag/v0.16.1#before-you-upgrade)
-in the v0.16.1 release notes first. The step quickstart does not do for you is
-the conflict WAL check: a conflict intent v0.16.0 left in the WAL keeps block
-assembly from starting on v0.16.1. Stop block assembly on its own, check the WAL
-is empty, then upgrade:
+in the v0.16.1 release notes first. A conflict intent v0.16.0 left in the
+conflict WAL keeps block assembly from starting on v0.16.1, so the WAL has to be
+empty before the new image runs, read after block assembly has stopped.
+
+`update.sh` checks this for you. When `.env` is on v0.16.0 (stable or a beta)
+and the target is v0.16.1 or later, it reads the WAL before it writes `.env`,
+with one read-only `docker exec aerospike asinfo`. It needs block assembly
+stopped and Aerospike up:
+
+```bash
+docker stop blockassembly      # not ./stop.sh: that stops Aerospike too
+./update.sh
+./start.sh                     # starts blockassembly again
+```
+
+An empty WAL lets the update through. A WAL with records stops it, and `.env`
+keeps the old tag: leave block assembly stopped and follow
+[Upgrade and repair](https://github.com/bsv-blockchain/teranode/blob/v0.16.1/docs/topics/conflict-recovery.md#upgrade-and-repair)
+before upgrading. When it can't read the WAL (block assembly running, Aerospike
+down, `utxostore` or `SETTINGS_CONTEXT` changed in `.env`, Docker missing), it
+refuses and says why. `--yes` does not skip the check.
+
+If `update.sh` can't check for you, or you set `TERANODE_VERSION` by hand,
+check the WAL yourself first. With quickstart's UTXO store:
 
 ```bash
 docker stop blockassembly
 docker exec aerospike asinfo -v "sets/utxo-store/utxo_conflictwal"   # empty or objects=0: clear
-./update.sh
-./start.sh                                       # starts blockassembly again
 ```
 
-Don't use `./stop.sh` for this; it takes Aerospike down with everything else.
-If the WAL is not empty, leave block assembly stopped and follow
-[Upgrade and repair](https://github.com/bsv-blockchain/teranode/blob/v0.16.1/docs/topics/conflict-recovery.md#upgrade-and-repair)
-before upgrading.
+With `utxostore` pointing elsewhere, use the namespace and `<set>_conflictwal`
+set of that store. Then set `TERANODE_VERSION` in `.env` and run `./start.sh`.
 
 ## Upgrading from below v0.15.7 (testnet / teratestnet)
 
