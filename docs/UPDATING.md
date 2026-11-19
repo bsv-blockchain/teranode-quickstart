@@ -27,6 +27,26 @@ never replaces a value you already set. If you rotate the key, run `./start.sh`
 so every service restarts with the new value; a service left on the old key
 fails its readiness check.
 
+## Upgrading from v0.16.0
+
+Read [Before you upgrade](https://github.com/bsv-blockchain/teranode/releases/tag/v0.16.1#before-you-upgrade)
+in the v0.16.1 release notes first. The step quickstart does not do for you is
+the conflict WAL check: a conflict intent v0.16.0 left in the WAL keeps block
+assembly from starting on v0.16.1. Stop block assembly on its own, check the WAL
+is empty, then upgrade:
+
+```bash
+docker stop blockassembly
+docker exec aerospike asinfo -v "sets/utxo-store/utxo_conflictwal"   # empty or objects=0: clear
+./update.sh
+./start.sh                                       # starts blockassembly again
+```
+
+Don't use `./stop.sh` for this; it takes Aerospike down with everything else.
+If the WAL is not empty, leave block assembly stopped and follow
+[Upgrade and repair](https://github.com/bsv-blockchain/teranode/blob/v0.16.1/docs/topics/conflict-recovery.md#upgrade-and-repair)
+before upgrading.
+
 ## Upgrading from below v0.15.7 (testnet / teratestnet)
 
 Releases before v0.15.7 dropped bare `OP_RETURN` outputs from the UTXO set at
