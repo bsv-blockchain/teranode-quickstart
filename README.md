@@ -242,6 +242,8 @@ Upgrading from v0.16.0: check the conflict WAL is empty before you run `./start.
 
 Upgrading from below v0.15.7 on testnet or teratestnet: if your node stopped advancing, see [docs/UPDATING.md](docs/UPDATING.md) for the `rewindblockchain` recovery path.
 
+Pulling a quickstart change that moves a support-service image (the asset cache moved to `nginx:1.30.7-alpine` for CVE-2026-123633 and CVE-2026-123007): `git pull`, then `./start.sh`. Compose pulls the new tag and recreates `asset-cache` on it; the cache volume carries over.
+
 Because the version pin lives only in `.env` (and `.env` is git-ignored), `git pull` on this repo will never conflict with your local version choice. The committed `.env.example` tracks the maintainer-recommended default for new installs.
 
 ---

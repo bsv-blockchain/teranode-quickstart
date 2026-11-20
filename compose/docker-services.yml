@@ -155,7 +155,7 @@ services:
 
   asset-cache:
     container_name: asset-cache
-    image: nginx:1.29.2
+    image: nginx:1.30.7-alpine
     networks:
       - teranode-network
     ports:
